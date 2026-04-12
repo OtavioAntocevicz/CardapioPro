@@ -31,6 +31,19 @@ SaaS de cardápio digital para restaurantes: painel admin (categorias, produtos,
 
 4. Em Authentication, habilite o provedor **Email** e ajuste URLs de redirect se necessário.
 
+## Deploy na Vercel
+
+O Vite embute variáveis `VITE_*` **no build**. Sem elas no painel da Vercel, o site quebra ou mostra tela de configuração.
+
+1. **Project → Settings → Environment Variables**
+2. Adicione:
+   - `VITE_SUPABASE_URL` = URL do projeto (`https://xxxx.supabase.co`)
+   - `VITE_SUPABASE_ANON_KEY` = chave **anon** (JWT)
+3. Marque **Production** e **Preview** (se usar branch preview).
+4. Faça um **novo deploy** (Redeploy) depois de salvar — deploys antigos não recebem variáveis novas sozinhos.
+
+O arquivo `vercel.json` redireciona rotas do React Router para `index.html`.
+
 ## Scripts
 
 | Comando        | Descrição              |

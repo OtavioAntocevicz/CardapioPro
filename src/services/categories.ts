@@ -1,8 +1,8 @@
 import type { Category } from '@/types/database'
-import { supabase } from './supabase'
+import { getSupabase } from './supabase'
 
 export async function fetchCategories(restaurantId: string): Promise<Category[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('categories')
     .select('*')
     .eq('restaurant_id', restaurantId)
@@ -16,7 +16,7 @@ export async function createCategory(
   restaurantId: string,
   name: string,
 ): Promise<Category> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('categories')
     .insert({ restaurant_id: restaurantId, name: name.trim() })
     .select()
@@ -27,7 +27,7 @@ export async function createCategory(
 }
 
 export async function updateCategory(id: string, name: string): Promise<Category> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('categories')
     .update({ name: name.trim() })
     .eq('id', id)
@@ -39,6 +39,6 @@ export async function updateCategory(id: string, name: string): Promise<Category
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const { error } = await supabase.from('categories').delete().eq('id', id)
+  const { error } = await getSupabase().from('categories').delete().eq('id', id)
   if (error) throw error
 }

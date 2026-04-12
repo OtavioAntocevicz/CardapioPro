@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabase'
+import { getSupabase, isSupabaseConfigured } from '@/services/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { useEffect } from 'react'
 
@@ -7,6 +7,13 @@ export function useAuthBootstrap() {
   const setInitialized = useAuthStore((s) => s.setInitialized)
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setSession(null)
+      setInitialized(true)
+      return
+    }
+
+    const supabase = getSupabase()
     let mounted = true
 
     supabase.auth.getSession().then(({ data: { session } }) => {

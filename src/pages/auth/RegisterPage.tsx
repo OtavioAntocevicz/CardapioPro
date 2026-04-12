@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { supabase } from '@/services/supabase'
+import { getSupabase } from '@/services/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
@@ -29,7 +29,7 @@ export function RegisterPage() {
       return
     }
     setLoading(true)
-    const { data, error: err } = await supabase.auth.signUp({ email, password })
+    const { data, error: err } = await getSupabase().auth.signUp({ email, password })
     setLoading(false)
     if (err) {
       setError(err.message)

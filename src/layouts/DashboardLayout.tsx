@@ -1,6 +1,6 @@
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/Button'
-import { supabase } from '@/services/supabase'
+import { getSupabase } from '@/services/supabase'
 import { useAuthStore } from '@/store/authStore'
 import {
   LayoutDashboard,
@@ -29,7 +29,7 @@ export function DashboardLayout() {
   const [open, setOpen] = useState(false)
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await getSupabase().auth.signOut()
     setSession(null)
     navigate('/login', { replace: true })
   }

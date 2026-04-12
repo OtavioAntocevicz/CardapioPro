@@ -1,10 +1,10 @@
 import type { Product, ProductInsert, ProductUpdate } from '@/types/database'
-import { supabase } from './supabase'
+import { getSupabase } from './supabase'
 
 const BUCKET = 'product-images'
 
 export async function fetchProducts(restaurantId: string): Promise<Product[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('products')
     .select('*')
     .eq('restaurant_id', restaurantId)
@@ -22,18 +22,18 @@ export async function uploadProductImage(
   const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'jpg'
   const path = `${restaurantId}/${crypto.randomUUID()}.${safeExt}`
 
-  const { error: upError } = await supabase.storage
+  const { error: upError } = await getSupabase().storage
     .from(BUCKET)
     .upload(path, file, { cacheControl: '3600', upsert: false })
 
   if (upError) throw upError
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  const { data } = getSupabase().storage.from(BUCKET).getPublicUrl(path)
   return data.publicUrl
 }
 
 export async function createProduct(row: ProductInsert): Promise<Product> {
-  const { data, error } = await supabase.from('products').insert(row).select().single()
+  const { data, error } = await getSupabase().from('products').insert(row).select().single()
 
   if (error) throw error
   return data as Product
@@ -43,7 +43,7 @@ export async function updateProduct(
   id: string,
   patch: ProductUpdate,
 ): Promise<Product> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('products')
     .update(patch)
     .eq('id', id)
@@ -55,6 +55,6 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  const { error } = await supabase.from('products').delete().eq('id', id)
+  const { error } = await getSupabase().from('products').delete().eq('id', id)
   if (error) throw error
 }

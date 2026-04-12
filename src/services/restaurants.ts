@@ -1,9 +1,9 @@
 import type { Restaurant } from '@/types/database'
-import { supabase } from './supabase'
+import { getSupabase } from './supabase'
 
 /** Primeiro restaurante do usuário (RLS limita aos próprios). */
 export async function fetchMyRestaurant(): Promise<Restaurant | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('restaurants')
     .select('*')
     .order('created_at', { ascending: true })
@@ -15,7 +15,7 @@ export async function fetchMyRestaurant(): Promise<Restaurant | null> {
 }
 
 export async function fetchRestaurantBySlug(slug: string): Promise<Restaurant | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('restaurants')
     .select('*')
     .eq('slug', slug)
@@ -29,12 +29,12 @@ export async function createRestaurant(input: {
   name: string
   slug: string
 }): Promise<Restaurant> {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await getSupabase().auth.getUser()
   if (userError) throw userError
   const userId = userData.user?.id
   if (!userId) throw new Error('Sessão inválida')
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('restaurants')
     .insert({
       user_id: userId,
