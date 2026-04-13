@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/authStore'
 import { fetchIsPlatformAdmin } from '@/services/platformAdmin'
 import { useQuery } from '@tanstack/react-query'
 import {
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -68,6 +69,10 @@ export function DashboardLayout() {
         <NavLink to="/app/settings" className={navClass} onClick={() => setOpen(false)}>
           <Settings className="h-4 w-4 shrink-0" aria-hidden />
           Restaurante
+        </NavLink>
+        <NavLink to="/app/plans" className={navClass} onClick={() => setOpen(false)}>
+          <CreditCard className="h-4 w-4 shrink-0" aria-hidden />
+          Planos
         </NavLink>
         {isPlatformAdmin ? (
           <NavLink to="/app/admin/plans" className={navClass} onClick={() => setOpen(false)}>

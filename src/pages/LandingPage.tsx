@@ -19,6 +19,9 @@ export function LandingPage() {
         </span>
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <Link to="/planos">
+            <Button variant="ghost">Planos</Button>
+          </Link>
           <Link to="/login">
             <Button variant="ghost">Entrar</Button>
           </Link>
