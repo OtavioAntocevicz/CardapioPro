@@ -30,13 +30,13 @@ export function PublicMenuPage() {
 
   const categoriesQuery = useQuery({
     queryKey: ['public-categories', restaurantId],
-    queryFn: () => fetchCategories(restaurantId!),
+    queryFn: () => fetchCategories(restaurantId!, { asPublicVisitor: true }),
     enabled: Boolean(restaurantId),
   })
 
   const productsQuery = useQuery({
     queryKey: ['public-products', restaurantId],
-    queryFn: () => fetchProducts(restaurantId!),
+    queryFn: () => fetchProducts(restaurantId!, { asPublicVisitor: true }),
     enabled: Boolean(restaurantId),
   })
 

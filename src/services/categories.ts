@@ -1,8 +1,12 @@
 import type { Category } from '@/types/database'
-import { getSupabase } from './supabase'
+import { getSupabase, getSupabasePublic } from './supabase'
 
-export async function fetchCategories(restaurantId: string): Promise<Category[]> {
-  const { data, error } = await getSupabase()
+export async function fetchCategories(
+  restaurantId: string,
+  opts?: { asPublicVisitor?: boolean },
+): Promise<Category[]> {
+  const supabase = opts?.asPublicVisitor ? getSupabasePublic() : getSupabase()
+  const { data, error } = await supabase
     .from('categories')
     .select('*')
     .eq('restaurant_id', restaurantId)

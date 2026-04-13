@@ -46,7 +46,7 @@ export function CategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
 
-  if (restaurantQuery.isLoading || !restaurantId) {
+  if (restaurantQuery.isLoading) {
     return (
       <div className="flex justify-center py-20">
         <Spinner />
@@ -54,14 +54,31 @@ export function CategoriesPage() {
     )
   }
 
+  if (restaurantQuery.isError) {
+    return (
+      <p className="text-center text-red-600 dark:text-red-400">
+        Não foi possível carregar seu restaurante. Atualize a página ou tente novamente.
+      </p>
+    )
+  }
+
   if (!restaurantQuery.data) {
     return (
-      <p className="text-slate-600 dark:text-slate-400">
-        <Link to="/app" className="text-brand-600 hover:underline dark:text-brand-400">
-          Crie um restaurante
-        </Link>{' '}
-        antes de adicionar categorias.
-      </p>
+      <div className="mx-auto max-w-2xl">
+        <EmptyState
+          icon={Tags}
+          title="Crie seu restaurante primeiro"
+          description="As categorias ficam vinculadas ao seu estabelecimento. Configure o restaurante na página inicial do painel e volte aqui em seguida."
+          action={
+            <Link
+              to="/app"
+              className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-brand-600/20 transition hover:bg-brand-700 dark:shadow-brand-900/40"
+            >
+              Ir para início
+            </Link>
+          }
+        />
+      </div>
     )
   }
 

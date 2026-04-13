@@ -1,10 +1,14 @@
 import type { Product, ProductInsert, ProductUpdate } from '@/types/database'
-import { getSupabase } from './supabase'
+import { getSupabase, getSupabasePublic } from './supabase'
 
 const BUCKET = 'product-images'
 
-export async function fetchProducts(restaurantId: string): Promise<Product[]> {
-  const { data, error } = await getSupabase()
+export async function fetchProducts(
+  restaurantId: string,
+  opts?: { asPublicVisitor?: boolean },
+): Promise<Product[]> {
+  const supabase = opts?.asPublicVisitor ? getSupabasePublic() : getSupabase()
+  const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('restaurant_id', restaurantId)

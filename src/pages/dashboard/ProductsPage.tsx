@@ -62,7 +62,7 @@ export function ProductsPage() {
 
   const [modal, setModal] = useState<'create' | { edit: Product } | null>(null)
 
-  if (restaurantQuery.isLoading || !restaurantId) {
+  if (restaurantQuery.isLoading) {
     return (
       <div className="flex justify-center py-20">
         <Spinner />
@@ -70,16 +70,35 @@ export function ProductsPage() {
     )
   }
 
-  if (!restaurantQuery.data) {
+  if (restaurantQuery.isError) {
     return (
-      <p className="text-slate-600 dark:text-slate-400">
-        <Link to="/app" className="text-brand-600 hover:underline dark:text-brand-400">
-          Crie um restaurante
-        </Link>{' '}
-        antes de cadastrar produtos.
+      <p className="text-center text-red-600 dark:text-red-400">
+        Não foi possível carregar seu restaurante. Atualize a página ou tente novamente.
       </p>
     )
   }
+
+  if (!restaurantQuery.data) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <EmptyState
+          icon={Package}
+          title="Crie seu restaurante primeiro"
+          description="Para cadastrar produtos, comece pela página inicial do painel e registre o nome e o link público do seu estabelecimento."
+          action={
+            <Link
+              to="/app"
+              className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-brand-600/20 transition hover:bg-brand-700 dark:shadow-brand-900/40"
+            >
+              Ir para início
+            </Link>
+          }
+        />
+      </div>
+    )
+  }
+
+  const myRestaurant = restaurantQuery.data
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -203,12 +222,12 @@ export function ProductsPage() {
 
       {modal ? (
         <ProductModal
-          restaurantId={restaurantId}
+          restaurantId={myRestaurant.id}
           categories={categoriesQuery.data ?? []}
           mode={modal}
           onClose={() => setModal(null)}
           onSaved={() => {
-            qc.invalidateQueries({ queryKey: ['products', restaurantId] })
+            qc.invalidateQueries({ queryKey: ['products', myRestaurant.id] })
             setModal(null)
           }}
         />

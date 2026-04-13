@@ -1,16 +1,26 @@
 import type { Plan, Restaurant } from '@/types/database'
-import { getSupabase } from './supabase'
+import { getSupabase, getSupabasePublic } from './supabase'
 
-/** Restaurante da conta (no máximo um por usuário; RLS limita aos próprios). */
+/** Restaurante da conta (no máximo um por usuário). Filtra por dono; não depende só do RLS. */
 export async function fetchMyRestaurant(): Promise<Restaurant | null> {
-  const { data, error } = await getSupabase().from('restaurants').select('*').maybeSingle()
+  const { data: userData, error: userError } = await getSupabase().auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) return null
+
+  const { data, error } = await getSupabase()
+    .from('restaurants')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle()
 
   if (error) throw error
   return (data as Restaurant | undefined) ?? null
 }
 
+/** Cardápio público por slug (cliente anon — políticas RLS `to anon`). */
 export async function fetchRestaurantBySlug(slug: string): Promise<Restaurant | null> {
-  const { data, error } = await getSupabase()
+  const { data, error } = await getSupabasePublic()
     .from('restaurants')
     .select('*')
     .eq('slug', slug)
@@ -65,7 +75,7 @@ export async function updateMyRestaurant(input: {
   return data as Restaurant
 }
 
-/** Lista todos os restaurantes (leitura já permitida pela política pública de cardápio). */
+/** Lista todos os restaurantes (política RLS para platform_admins). */
 export async function fetchAllRestaurantsAdmin(): Promise<Restaurant[]> {
   const { data, error } = await getSupabase()
     .from('restaurants')
