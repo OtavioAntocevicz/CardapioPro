@@ -238,6 +238,11 @@ export function DashboardOverview() {
                 Pré-visualizar aqui
               </Button>
             </Link>
+            <Link to="/app/settings">
+              <Button variant="ghost" className="gap-2">
+                Editar restaurante
+              </Button>
+            </Link>
           </div>
         </div>
       </Card>

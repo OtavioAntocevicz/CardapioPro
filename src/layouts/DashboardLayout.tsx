@@ -2,12 +2,16 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/Button'
 import { getSupabase } from '@/services/supabase'
 import { useAuthStore } from '@/store/authStore'
+import { fetchIsPlatformAdmin } from '@/services/platformAdmin'
+import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard,
   LogOut,
   Menu,
   Package,
   PanelLeftClose,
+  Settings,
+  Shield,
   Tags,
   UtensilsCrossed,
   X,
@@ -27,6 +31,14 @@ export function DashboardLayout() {
   const setSession = useAuthStore((s) => s.setSession)
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+
+  const adminQuery = useQuery({
+    queryKey: ['platform-admin', user?.id],
+    queryFn: fetchIsPlatformAdmin,
+    enabled: Boolean(user),
+    staleTime: 60_000,
+  })
+  const isPlatformAdmin = Boolean(adminQuery.data)
 
   async function handleLogout() {
     await getSupabase().auth.signOut()
@@ -53,6 +65,16 @@ export function DashboardLayout() {
           <Package className="h-4 w-4 shrink-0" aria-hidden />
           Produtos
         </NavLink>
+        <NavLink to="/app/settings" className={navClass} onClick={() => setOpen(false)}>
+          <Settings className="h-4 w-4 shrink-0" aria-hidden />
+          Restaurante
+        </NavLink>
+        {isPlatformAdmin ? (
+          <NavLink to="/app/admin/plans" className={navClass} onClick={() => setOpen(false)}>
+            <Shield className="h-4 w-4 shrink-0" aria-hidden />
+            Planos (admin)
+          </NavLink>
+        ) : null}
       </nav>
       <div className="border-t border-slate-200 p-3 dark:border-slate-800">
         <p
