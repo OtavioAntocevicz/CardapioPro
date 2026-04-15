@@ -14,15 +14,12 @@ import {
   uploadProductImage,
 } from '@/services/products'
 import type { Product } from '@/types/database'
+import { formatPrice } from '@/utils/format'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImagePlus, Package, Pencil, Trash2 } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-
-function formatPrice(n: number) {
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 export function ProductsPage() {
   const qc = useQueryClient()
@@ -161,11 +158,14 @@ export function ProductsPage() {
                       {p.image_url ? (
                         <img
                           src={p.image_url}
-                          alt=""
+                          alt={p.name}
                           className="h-full w-full object-cover object-center"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-slate-400 dark:text-slate-600">
+                        <div
+                          className="flex h-full items-center justify-center text-slate-400 dark:text-slate-600"
+                          aria-hidden
+                        >
                           <ImagePlus className="h-8 w-8" aria-hidden />
                         </div>
                       )}

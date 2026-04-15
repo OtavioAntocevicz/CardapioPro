@@ -3,27 +3,19 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
 import { fetchMyRestaurant, updateMyRestaurant } from '@/services/restaurants'
+import type { Restaurant } from '@/types/database'
 import { isValidSlug, slugify } from '@/utils/slug'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FormEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-export function RestaurantSettingsPage() {
+/** Estado inicial do formulário vem das props; `key={restaurant.id}` remonta ao trocar de conta. */
+function RestaurantSettingsForm({ restaurant }: { restaurant: Restaurant }) {
   const qc = useQueryClient()
-  const restaurantQuery = useQuery({ queryKey: ['my-restaurant'], queryFn: fetchMyRestaurant })
-  const restaurant = restaurantQuery.data
-
-  const [name, setName] = useState('')
-  const [slug, setSlug] = useState('')
+  const [name, setName] = useState(restaurant.name)
+  const [slug, setSlug] = useState(restaurant.slug)
   const [slugTouched, setSlugTouched] = useState(false)
-
-  useEffect(() => {
-    if (!restaurant) return
-    setName(restaurant.name)
-    setSlug(restaurant.slug)
-    setSlugTouched(false)
-  }, [restaurant])
 
   const updateMut = useMutation({
     mutationFn: updateMyRestaurant,
@@ -46,25 +38,6 @@ export function RestaurantSettingsPage() {
     const s = slug.trim().toLowerCase()
     if (!isValidSlug(s)) return
     updateMut.mutate({ name, slug: s })
-  }
-
-  if (restaurantQuery.isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
-    )
-  }
-
-  if (!restaurant) {
-    return (
-      <p className="text-slate-600 dark:text-slate-400">
-        <Link to="/app" className="text-brand-600 hover:underline dark:text-brand-400">
-          Crie um restaurante
-        </Link>{' '}
-        antes de editar as configurações.
-      </p>
-    )
   }
 
   const publicPath = `/m/${slug || restaurant.slug}`
@@ -118,4 +91,30 @@ export function RestaurantSettingsPage() {
       </Card>
     </div>
   )
+}
+
+export function RestaurantSettingsPage() {
+  const restaurantQuery = useQuery({ queryKey: ['my-restaurant'], queryFn: fetchMyRestaurant })
+  const restaurant = restaurantQuery.data
+
+  if (restaurantQuery.isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (!restaurant) {
+    return (
+      <p className="text-slate-600 dark:text-slate-400">
+        <Link to="/app" className="text-brand-600 hover:underline dark:text-brand-400">
+          Crie um restaurante
+        </Link>{' '}
+        antes de editar as configurações.
+      </p>
+    )
+  }
+
+  return <RestaurantSettingsForm key={restaurant.id} restaurant={restaurant} />
 }

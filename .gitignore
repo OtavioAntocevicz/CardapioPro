@@ -7,29 +7,56 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Environment (nunca commitar segredos)
 .env
 .env.*
 !.env.example
-dist
-dist-ssr
 *.local
 
-# Test / cache
+# Build
+dist
+dist-ssr
+dev-dist
+
+# Vite / tooling
+*.timestamp-*
+
+# Tests & coverage
 coverage
+.nyc_output
+
+# ESLint
 .eslintcache
 
-# Secrets & tooling
-*.pem
-.cursor
+# TypeScript
+*.tsbuildinfo
 
-# Editor directories and files
+# Certificados locais
+*.pem
+
+# Supabase CLI (cache local, se usar)
+.branches
+.temp
+
+# Deploy
+.vercel
+
+# Cursor / IDE (regras compartilháveis: use AGENTS.md ou docs no repo)
+.cursor
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db

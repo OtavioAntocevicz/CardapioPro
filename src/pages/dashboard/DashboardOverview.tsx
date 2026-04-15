@@ -5,9 +5,11 @@ import { Spinner } from '@/components/ui/Spinner'
 import { fetchCategories } from '@/services/categories'
 import { createRestaurant, fetchMyRestaurant } from '@/services/restaurants'
 import { fetchProducts } from '@/services/products'
+import { downloadMenuPdf } from '@/utils/menuPdf'
+import { downloadMenuQrPng } from '@/utils/menuQr'
 import { isValidSlug, slugify } from '@/utils/slug'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Link2, Package, Tags } from 'lucide-react'
+import { ExternalLink, FileDown, Link2, Package, QrCode, Tags } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -34,6 +36,20 @@ export function DashboardOverview() {
     enabled: Boolean(restaurant?.id),
   })
 
+  const menuExportQuery = useQuery({
+    queryKey: ['dashboard-menu-export', restaurant?.id],
+    queryFn: async () => {
+      if (!restaurant) throw new Error('Restaurante não carregado')
+      const [categories, products] = await Promise.all([
+        fetchCategories(restaurant.id),
+        fetchProducts(restaurant.id),
+      ])
+      return { categories, products }
+    },
+    enabled: Boolean(restaurant?.id),
+    staleTime: 60_000,
+  })
+
   const createMut = useMutation({
     mutationFn: createRestaurant,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['my-restaurant'] }),
@@ -42,6 +58,9 @@ export function DashboardOverview() {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
+  const [includePhotosInPdf, setIncludePhotosInPdf] = useState(false)
+  const [exportBusy, setExportBusy] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   function handleNameChange(value: string) {
     setName(value)
@@ -55,6 +74,37 @@ export function DashboardOverview() {
       return
     }
     createMut.mutate({ name, slug: s })
+  }
+
+  async function handleDownloadPdf() {
+    if (!restaurant || !publicUrl) return
+    const data = menuExportQuery.data
+    if (!data) return
+    setExportBusy(true)
+    setExportError(null)
+    try {
+      await downloadMenuPdf({
+        restaurantName: restaurant.name,
+        categories: data.categories,
+        products: data.products,
+        includePhotos: includePhotosInPdf,
+        fileBaseName: `cardapio-${restaurant.slug}`,
+      })
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Não foi possível gerar o PDF.')
+    } finally {
+      setExportBusy(false)
+    }
+  }
+
+  async function handleDownloadQr() {
+    if (!restaurant || !publicUrl) return
+    setExportError(null)
+    try {
+      await downloadMenuQrPng(publicUrl, `qrcode-cardapio-${restaurant.slug}`)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Não foi possível gerar o QR Code.')
+    }
   }
 
   const publicUrl =
@@ -245,6 +295,56 @@ export function DashboardOverview() {
             </Link>
           </div>
         </div>
+      </Card>
+
+      <Card className="mt-6">
+        <p className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-200">
+          <FileDown className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />
+          PDF e QR Code para impressão
+        </p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Gere um PDF em formato lista (apenas itens disponíveis) ou uma imagem do QR com o link
+          público do cardápio.
+        </p>
+        <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 bg-white text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900"
+            checked={includePhotosInPdf}
+            onChange={(e) => setIncludePhotosInPdf(e.target.checked)}
+          />
+          <span>Incluir fotos dos pratos no PDF (arquivo maior; pode demorar um pouco)</span>
+        </label>
+        {exportError ? (
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{exportError}</p>
+        ) : null}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            className="gap-2"
+            loading={exportBusy}
+            disabled={menuExportQuery.isLoading || menuExportQuery.isError || exportBusy}
+            onClick={() => void handleDownloadPdf()}
+          >
+            <FileDown className="h-4 w-4" aria-hidden />
+            Baixar PDF
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="gap-2"
+            disabled={!publicUrl}
+            onClick={() => void handleDownloadQr()}
+          >
+            <QrCode className="h-4 w-4" aria-hidden />
+            Baixar QR Code (PNG)
+          </Button>
+        </div>
+        {menuExportQuery.isError ? (
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">
+            Não foi possível carregar os dados do cardápio para o PDF. Atualize a página.
+          </p>
+        ) : null}
       </Card>
 
       <div className="mt-8 flex flex-wrap gap-3">

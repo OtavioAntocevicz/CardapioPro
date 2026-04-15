@@ -24,11 +24,12 @@ SaaS de cardápio digital para restaurantes: painel admin (categorias, produtos,
    - `VITE_SUPABASE_URL` — Project URL (`https://xxxx.supabase.co`)
    - `VITE_SUPABASE_ANON_KEY` — chave **anon** (JWT) do mesmo projeto
 
-3. No Supabase, execute o SQL das migrações (SQL Editor → colar e rodar), **nesta ordem**:
+3. No Supabase, execute o SQL das migrações (SQL Editor → colar e rodar), **nesta ordem** (datas no nome do arquivo):
 
-   - `supabase/migrations/20260412000000_init.sql`
-   - Se o upload de imagens falhar por RLS, rode também `supabase/migrations/20260412100000_fix_storage_rls.sql`
-   - `supabase/migrations/20260412220000_restaurant_unique_platform_admins.sql` — um restaurante por conta, tabela de admins da plataforma e função para alterar plano com segurança
+   - `supabase/migrations/20260412000000_init.sql` — schema inicial
+   - `supabase/migrations/20260412100000_fix_storage_rls.sql` — RLS do bucket de imagens (recomendado)
+   - `supabase/migrations/20260412220000_restaurant_unique_platform_admins.sql` — um restaurante por conta, admins da plataforma e RPC de plano
+   - `supabase/migrations/20260413120000_rls_public_anon_only.sql` — leitura pública do cardápio como visitante `anon`
 
 4. Em Authentication, habilite o provedor **Email** e ajuste URLs de redirect se necessário.
 
@@ -60,14 +61,26 @@ O Vite embute variáveis `VITE_*` **no build**. Sem elas no painel da Vercel, o 
 
 O arquivo `vercel.json` redireciona rotas do React Router para `index.html`.
 
+### Checklist antes do primeiro deploy
+
+- [ ] Variáveis `VITE_SUPABASE_*` definidas no provedor (Vercel, etc.)
+- [ ] Todas as migrações aplicadas no mesmo projeto Supabase
+- [ ] Bucket de storage `product-images` existe e políticas batem com as migrações (se usar fotos)
+
+## CI (GitHub Actions)
+
+No push/PR para `main` ou `master`, o workflow `.github/workflows/ci.yml` roda `lint`, `test:run` e `build`. Use **Node 20+** localmente para espelhar o CI.
+
 ## Scripts
 
-| Comando        | Descrição              |
-| -------------- | ---------------------- |
-| `npm run dev`  | Servidor de desenvolvimento |
-| `npm run build`| Build de produção      |
-| `npm run preview` | Servir pasta `dist` |
-| `npm run lint` | ESLint                 |
+| Comando            | Descrição                    |
+| ------------------ | ---------------------------- |
+| `npm run dev`      | Servidor de desenvolvimento  |
+| `npm run build`    | Build de produção            |
+| `npm run preview`  | Servir pasta `dist`          |
+| `npm run lint`     | ESLint                       |
+| `npm run test`     | Vitest (watch)               |
+| `npm run test:run` | Vitest uma vez (CI / scripts)|
 
 ## Estrutura (frontend)
 

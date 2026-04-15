@@ -10,6 +10,12 @@ export async function fetchIsPlatformAdmin(): Promise<boolean> {
     .eq('user_id', userData.user.id)
     .maybeSingle()
 
-  if (error) return false
+  if (error) {
+    console.warn(
+      '[CardápioPro] Falha ao consultar platform_admins (rede, RLS ou indisponibilidade):',
+      error.message,
+    )
+    return false
+  }
   return data != null
 }

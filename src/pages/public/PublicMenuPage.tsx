@@ -5,20 +5,20 @@ import { fetchCategories } from '@/services/categories'
 import { fetchRestaurantBySlug } from '@/services/restaurants'
 import { fetchProducts } from '@/services/products'
 import type { Category, Product } from '@/types/database'
+import { formatPrice } from '@/utils/format'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, UtensilsCrossed } from 'lucide-react'
+import { ArrowLeft, LayoutGrid, List, UtensilsCrossed } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 
-function formatPrice(n: number) {
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
+type MenuViewMode = 'blocks' | 'list'
 
 export function PublicMenuPage() {
   const { slug } = useParams<{ slug: string }>()
   const [searchParams] = useSearchParams()
   const isPreview = searchParams.get('preview') === '1'
   const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<MenuViewMode>('blocks')
 
   const restaurantQuery = useQuery({
     queryKey: ['public-restaurant', slug],
@@ -154,6 +154,44 @@ export function PublicMenuPage() {
             />
           ))}
         </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-500">
+            Visualização
+          </p>
+          <div
+            className="inline-flex rounded-xl border border-slate-200/90 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+            role="group"
+            aria-label="Modo de visualização do cardápio"
+          >
+            <button
+              type="button"
+              onClick={() => setViewMode('blocks')}
+              aria-pressed={viewMode === 'blocks'}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                viewMode === 'blocks'
+                  ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/80'
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+              Blocos
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              aria-pressed={viewMode === 'list'}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                viewMode === 'list'
+                  ? 'bg-brand-600 text-white shadow-sm dark:bg-brand-500'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/80'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" aria-hidden />
+              Lista
+            </button>
+          </div>
+        </div>
       </div>
 
       <main className="mx-auto max-w-lg px-4 pt-6">
@@ -167,7 +205,7 @@ export function PublicMenuPage() {
             title="Nada por aqui"
             description="Este cardápio ainda não tem itens disponíveis nesta seleção."
           />
-        ) : (
+        ) : viewMode === 'blocks' ? (
           <ul className="flex flex-col gap-5">
             {filteredProducts.map((p) => (
               <li key={p.id}>
@@ -176,13 +214,16 @@ export function PublicMenuPage() {
                     {p.image_url ? (
                       <img
                         src={p.image_url}
-                        alt=""
+                        alt={p.name}
                         className="h-full w-full object-cover object-center"
                         loading="lazy"
                         decoding="async"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-slate-300 dark:text-slate-600">
+                      <div
+                        className="flex h-full w-full items-center justify-center text-slate-300 dark:text-slate-600"
+                        aria-hidden
+                      >
                         <UtensilsCrossed className="h-16 w-16 opacity-60" aria-hidden />
                       </div>
                     )}
@@ -198,6 +239,48 @@ export function PublicMenuPage() {
                     </div>
                     {p.description ? (
                       <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                        {p.description}
+                      </p>
+                    ) : null}
+                  </div>
+                </article>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {filteredProducts.map((p) => (
+              <li key={p.id}>
+                <article className="flex gap-3 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/40 dark:shadow-black/15">
+                  <div className="relative h-[5.25rem] w-[5.25rem] shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800/80 sm:h-28 sm:w-28">
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        className="h-full w-full object-cover object-center"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-full w-full items-center justify-center text-slate-300 dark:text-slate-600"
+                        aria-hidden
+                      >
+                        <UtensilsCrossed className="h-8 w-8 opacity-60 sm:h-10 sm:w-10" aria-hidden />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                      <h2 className="text-base font-semibold leading-snug text-slate-900 dark:text-white">
+                        {p.name}
+                      </h2>
+                      <p className="shrink-0 text-base font-bold tabular-nums text-brand-600 dark:text-brand-400">
+                        {formatPrice(Number(p.price))}
+                      </p>
+                    </div>
+                    {p.description ? (
+                      <p className="line-clamp-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                         {p.description}
                       </p>
                     ) : null}

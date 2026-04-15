@@ -1,4 +1,3 @@
-import { PlansComparisonTable } from '@/components/plans/PlansComparisonTable'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { adminSetRestaurantPlan, fetchAllRestaurantsAdmin } from '@/services/restaurants'
@@ -55,19 +54,7 @@ export function AdminPlansPage() {
         (Authentication → Users).
       </p>
 
-      <section className="mt-8" aria-labelledby="admin-plans-compare">
-        <h2 id="admin-plans-compare" className="text-lg font-semibold text-slate-900 dark:text-white">
-          Referência: o que cada plano oferece
-        </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Use esta tabela ao alinhar expectativas com o cliente ao mudar o plano no banco.
-        </p>
-        <div className="mt-4">
-          <PlansComparisonTable />
-        </div>
-      </section>
-
-      <h2 className="mt-10 text-lg font-semibold text-slate-900 dark:text-white">Restaurantes e planos</h2>
+      <h2 className="mt-8 text-lg font-semibold text-slate-900 dark:text-white">Restaurantes e planos</h2>
       <Card className="mt-3 overflow-x-auto p-0">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-400">
