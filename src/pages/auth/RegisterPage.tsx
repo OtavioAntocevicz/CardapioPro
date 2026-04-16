@@ -57,6 +57,7 @@ export function RegisterPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled
           />
           <Input
             type="password"
@@ -66,6 +67,7 @@ export function RegisterPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled
           />
           {error ? (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
