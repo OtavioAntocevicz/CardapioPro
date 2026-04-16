@@ -7,15 +7,4 @@ export function useThemeSync() {
   useEffect(() => {
     applyThemeToDocument(theme)
   }, [theme])
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => {
-      if (useThemeStore.getState().theme === 'system') {
-        applyThemeToDocument('system')
-      }
-    }
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
 }
