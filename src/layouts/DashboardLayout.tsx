@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Palette,
   PanelLeftClose,
   Settings,
   Shield,
@@ -56,7 +57,11 @@ export function DashboardLayout() {
       <nav className="flex flex-1 flex-col gap-1 p-3">
         <NavLink to="/app" end className={navClass} onClick={() => setOpen(false)}>
           <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden />
-          Visão geral
+          Visão Geral
+        </NavLink>
+        <NavLink to="/app/settings" className={navClass} onClick={() => setOpen(false)}>
+          <Settings className="h-4 w-4 shrink-0" aria-hidden />
+          Restaurante
         </NavLink>
         <NavLink to="/app/categories" className={navClass} onClick={() => setOpen(false)}>
           <Tags className="h-4 w-4 shrink-0" aria-hidden />
@@ -66,9 +71,9 @@ export function DashboardLayout() {
           <Package className="h-4 w-4 shrink-0" aria-hidden />
           Produtos
         </NavLink>
-        <NavLink to="/app/settings" className={navClass} onClick={() => setOpen(false)}>
-          <Settings className="h-4 w-4 shrink-0" aria-hidden />
-          Restaurante
+        <NavLink to="/app/personalizacao" className={navClass} onClick={() => setOpen(false)}>
+          <Palette className="h-4 w-4 shrink-0" aria-hidden />
+          Personalização
         </NavLink>
         <NavLink to="/app/plans" className={navClass} onClick={() => setOpen(false)}>
           <CreditCard className="h-4 w-4 shrink-0" aria-hidden />

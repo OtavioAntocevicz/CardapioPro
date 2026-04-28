@@ -24,12 +24,9 @@ SaaS de cardápio digital para restaurantes: painel admin (categorias, produtos,
    - `VITE_SUPABASE_URL` — Project URL (`https://xxxx.supabase.co`)
    - `VITE_SUPABASE_ANON_KEY` — chave **anon** (JWT) do mesmo projeto
 
-3. No Supabase, execute o SQL das migrações (SQL Editor → colar e rodar), **nesta ordem** (datas no nome do arquivo):
+3. No Supabase, execute o SQL (SQL Editor → colar e rodar **o arquivo inteiro**):
 
-   - `supabase/migrations/20260412000000_init.sql` — schema inicial
-   - `supabase/migrations/20260412100000_fix_storage_rls.sql` — RLS do bucket de imagens (recomendado)
-   - `supabase/migrations/20260412220000_restaurant_unique_platform_admins.sql` — um restaurante por conta, admins da plataforma e RPC de plano
-   - `supabase/migrations/20260413120000_rls_public_anon_only.sql` — leitura pública do cardápio como visitante `anon`
+   - `supabase/migrations/20260412000000_init.sql` — schema completo (tabelas, RLS, storage, admin, tema `jsonb`, um restaurante por conta, leitura pública como `anon`)
 
 4. Em Authentication, habilite o provedor **Email** e ajuste URLs de redirect se necessário.
 
@@ -46,7 +43,7 @@ Não é obrigatório “ver todos os logins” no app: emails e contas ficam em 
 
 2. Faça login no CardápioPro e abra **Planos (admin)** no menu lateral (`/app/admin/plans`). Lá você altera `free` / `pro` / `enterprise` por restaurante. A lista mostra o `user_id` do dono; use-o para cruzar com a lista de usuários no Supabase se precisar do email.
 
-Se a migração `20260412220000_...` falhar por **restaurante duplicado por usuário**, apague ou una linhas extras na tabela `restaurants` (mesmo `user_id`) e execute o script de novo.
+Se a criação do schema falhar por **restaurante duplicado por usuário** (em bases já existentes), apague ou una linhas extras na tabela `restaurants` (mesmo `user_id`) antes de reaplicar.
 
 ## Deploy na Vercel
 
@@ -64,7 +61,7 @@ O arquivo `vercel.json` redireciona rotas do React Router para `index.html`.
 ### Checklist antes do primeiro deploy
 
 - [ ] Variáveis `VITE_SUPABASE_*` definidas no provedor (Vercel, etc.)
-- [ ] Todas as migrações aplicadas no mesmo projeto Supabase
+- [ ] Script SQL `20260412000000_init.sql` aplicado no mesmo projeto Supabase
 - [ ] Bucket de storage `product-images` existe e políticas batem com as migrações (se usar fotos)
 
 ## CI (GitHub Actions)

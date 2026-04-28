@@ -7,6 +7,8 @@ export interface Restaurant {
   slug: string
   plan: Plan
   created_at: string
+  /** Configuração do cardápio público; vindo do Supabase como jsonb. */
+  theme?: unknown
 }
 
 export interface Category {

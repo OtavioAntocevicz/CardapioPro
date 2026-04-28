@@ -1,0 +1,3 @@
+- Ajustar Menu (tirar o prévia)
+- menu lateral deixar na ordem de criação
+- Fazer com que o restaurante consiga personalizar o cardápio dele

@@ -31,6 +31,9 @@ const RestaurantSettingsPage = lazy(() =>
     default: m.RestaurantSettingsPage,
   })),
 )
+const CustomizationPage = lazy(() =>
+  import('@/pages/dashboard/CustomizationPage').then((m) => ({ default: m.CustomizationPage })),
+)
 const UserPlansPage = lazy(() =>
   import('@/pages/dashboard/UserPlansPage').then((m) => ({ default: m.UserPlansPage })),
 )
@@ -66,6 +69,7 @@ export function AppRoutes() {
           <Route path="/app" element={<DashboardLayout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="settings" element={<RestaurantSettingsPage />} />
+            <Route path="personalizacao" element={<CustomizationPage />} />
             <Route path="plans" element={<UserPlansPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="products" element={<ProductsPage />} />
