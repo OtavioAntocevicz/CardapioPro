@@ -5,14 +5,19 @@ const BUCKET = 'product-images'
 
 export async function fetchProducts(
   restaurantId: string,
+  menuId?: string,
   opts?: { asPublicVisitor?: boolean },
 ): Promise<Product[]> {
   const supabase = opts?.asPublicVisitor ? getSupabasePublic() : getSupabase()
-  const { data, error } = await supabase
+  let query = supabase
     .from('products')
     .select('*')
     .eq('restaurant_id', restaurantId)
     .order('created_at', { ascending: true })
+
+  if (menuId) query = query.eq('menu_id', menuId)
+
+  const { data, error } = await query
 
   if (error) throw error
   return (data ?? []) as Product[]
@@ -37,7 +42,16 @@ export async function uploadProductImage(
 }
 
 export async function createProduct(row: ProductInsert): Promise<Product> {
-  const { data, error } = await getSupabase().from('products').insert(row).select().single()
+  const { data, error } = await getSupabase().rpc('create_product', {
+    p_restaurant_id: row.restaurant_id,
+    p_menu_id: row.menu_id,
+    p_category_id: row.category_id,
+    p_name: row.name,
+    p_description: row.description,
+    p_price: row.price,
+    p_image_url: row.image_url,
+    p_is_available: row.is_available,
+  })
 
   if (error) throw error
   return data as Product

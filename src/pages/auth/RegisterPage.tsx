@@ -13,7 +13,6 @@ export function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   if (initialized && user) {
@@ -22,23 +21,30 @@ export function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (loading) return
     setError(null)
-    setInfo(null)
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail) {
+      setError('Informe um email válido.')
+      return
+    }
     if (password.length < 6) {
       setError('A senha deve ter pelo menos 6 caracteres.')
       return
     }
     setLoading(true)
-    const { data, error: err } = await getSupabase().auth.signUp({ email, password })
+    const { data, error: err } = await getSupabase().auth.signUp({
+      email: normalizedEmail,
+      password,
+    })
     setLoading(false)
     if (err) {
       setError(err.message)
       return
     }
-    if (data.session) {
-      return
+    if (!data.session) {
+      setError('Cadastro criado, mas a sessão não foi iniciada. Tente entrar na tela de login.')
     }
-    setInfo('Verifique seu email para confirmar o cadastro (se a confirmação estiver ativa no Supabase).')
   }
 
   return (
@@ -57,7 +63,7 @@ export function RegisterPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled
+            disabled={loading}
           />
           <Input
             type="password"
@@ -67,19 +73,14 @@ export function RegisterPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled
+            disabled={loading}
           />
           {error ? (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
               {error}
             </p>
           ) : null}
-          {info ? (
-            <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800 dark:bg-brand-500/10 dark:text-brand-200">
-              {info}
-            </p>
-          ) : null}
-          <Button type="submit" className="w-full" loading={loading}>
+          <Button type="submit" className="w-full" loading={loading} disabled={loading}>
             Registrar
           </Button>
         </form>

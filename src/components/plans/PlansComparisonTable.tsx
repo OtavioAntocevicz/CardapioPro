@@ -2,6 +2,10 @@ import { PLAN_COMPARISON_ROWS, PLAN_MARKETING, PLAN_ORDER } from '@/data/plans'
 import type { Plan } from '@/types/database'
 import { Check, Minus } from 'lucide-react'
 
+function isNumericValue(value: string): boolean {
+  return /^\d+$/.test(value.trim())
+}
+
 function Cell({ value }: { value: boolean | string }) {
   if (typeof value === 'boolean') {
     return value ? (
@@ -16,8 +20,15 @@ function Cell({ value }: { value: boolean | string }) {
       </span>
     )
   }
+  const numeric = isNumericValue(value)
   return (
-    <span className="text-left text-sm leading-snug text-slate-700 dark:text-slate-300">{value}</span>
+    <span
+      className={`text-sm leading-snug text-slate-700 dark:text-slate-300 ${
+        numeric ? 'text-center font-semibold tabular-nums' : 'text-left'
+      }`}
+    >
+      {value}
+    </span>
   )
 }
 
@@ -47,11 +58,16 @@ export function PlansComparisonTable({ highlightPlan }: PlansComparisonTableProp
                   scope="col"
                   className={`px-4 py-4 text-center ${
                     active
-                      ? 'bg-brand-50 ring-1 ring-inset ring-brand-200 dark:bg-brand-500/10 dark:ring-brand-500/35'
+                      ? 'bg-brand-100 ring-2 ring-inset ring-brand-300 dark:bg-brand-500/20 dark:ring-brand-400/60'
                       : ''
                   }`}
                 >
                   <div className="flex flex-col items-center gap-1">
+                    {active ? (
+                      <span className="rounded-full bg-brand-600 px-2.5 py-0.5 text-[11px] font-semibold text-white dark:bg-brand-500">
+                        Plano atual
+                      </span>
+                    ) : null}
                     <span className="text-base font-semibold text-slate-900 dark:text-white">{m.name}</span>
                     <span className="text-xs font-normal text-brand-700 dark:text-brand-300">{m.priceLabel}</span>
                     <span className="max-w-[10rem] text-xs font-normal text-slate-500 dark:text-slate-400">
@@ -80,11 +96,19 @@ export function PlansComparisonTable({ highlightPlan }: PlansComparisonTableProp
                     key={id}
                     className={`px-4 py-3 text-center align-top ${
                       active
-                        ? 'bg-brand-50/80 dark:bg-brand-500/[0.07]'
+                        ? 'bg-brand-100/80 dark:bg-brand-500/15'
                         : ''
                     }`}
                   >
-                    <div className={typeof val === 'boolean' ? 'flex justify-center' : 'text-center sm:text-left'}>
+                    <div
+                      className={
+                        typeof val === 'boolean'
+                          ? 'flex justify-center'
+                          : isNumericValue(String(val))
+                            ? 'flex justify-center'
+                            : 'text-center sm:text-left'
+                      }
+                    >
                       <Cell value={val} />
                     </div>
                   </td>

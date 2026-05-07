@@ -1,7 +1,11 @@
 import {
   DEFAULT_RESTAURANT_THEME,
   type RestaurantTheme,
+  type ThemeCardStyle,
+  type ThemeCornerRadius,
+  type ThemeDensity,
   type ThemeFontId,
+  type ThemeProductLayout,
 } from '@/types/theme'
 
 const HEX = /^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/
@@ -72,6 +76,66 @@ export function themeFontStack(id: ThemeFontId): string {
   return FONT_STACK[id] ?? FONT_STACK.dm_sans
 }
 
+const THEME_FONTS: ThemeFontId[] = ['system', 'dm_sans', 'playfair', 'lora', 'poppins']
+const PRODUCT_LAYOUTS: ThemeProductLayout[] = ['cards', 'list', 'compact']
+const CARD_STYLES: ThemeCardStyle[] = ['soft', 'flat', 'elevated']
+const DENSITIES: ThemeDensity[] = ['comfortable', 'compact']
+const RADII: ThemeCornerRadius[] = ['sm', 'md', 'lg']
+
+/** Classes Tailwind para cantos (precisa string literal completa para o JIT). */
+export function themeCornerClasses(radius: ThemeCornerRadius): {
+  card: string
+  cardSmall: string
+  thumb: string
+  thumbSmall: string
+} {
+  const map = {
+    sm: {
+      card: 'rounded-lg',
+      cardSmall: 'rounded-lg',
+      thumb: 'rounded-md',
+      thumbSmall: 'rounded-md',
+    },
+    md: {
+      card: 'rounded-xl',
+      cardSmall: 'rounded-xl',
+      thumb: 'rounded-lg',
+      thumbSmall: 'rounded-lg',
+    },
+    lg: {
+      card: 'rounded-2xl',
+      cardSmall: 'rounded-2xl',
+      thumb: 'rounded-xl',
+      thumbSmall: 'rounded-xl',
+    },
+  } satisfies Record<ThemeCornerRadius, Record<string, string>>
+
+  return map[radius] ?? map.lg
+}
+
+export function themeGapBlocks(density: ThemeDensity): string {
+  return density === 'compact' ? 'gap-4' : 'gap-5'
+}
+
+export function themeGapList(density: ThemeDensity): string {
+  return density === 'compact' ? 'gap-2' : 'gap-3'
+}
+
+/** Caixa de sombra inline coerente com tema claro/escuro e estilo de cartão. */
+export function themeCardInsetShadow(
+  cardStyle: ThemeCardStyle,
+  toneHex: string,
+  mode: 'blocks' | 'list',
+): string | undefined {
+  if (cardStyle === 'flat') return 'none'
+  const base = normalizeHex(toneHex) ?? '#0f172a'
+  const alpha = mode === 'blocks' ? '14' : '0d'
+  const strong = mode === 'blocks' ? '22' : '14'
+  const eight = `${base}${cardStyle === 'elevated' ? strong : alpha}`
+  if (cardStyle === 'elevated') return `0 14px 42px ${eight}`
+  return `0 8px 28px ${eight}`
+}
+
 /** Mescla JSON salvo com defaults seguros. */
 export function parseRestaurantTheme(raw: unknown): RestaurantTheme {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -79,7 +143,35 @@ export function parseRestaurantTheme(raw: unknown): RestaurantTheme {
   }
   const o = raw as Record<string, unknown>
   const font = o.font_family
-  const fonts: ThemeFontId[] = ['system', 'dm_sans', 'playfair', 'lora', 'poppins']
+  const headingFontRaw = o.heading_font_family ?? font
+  const baseFont = THEME_FONTS.includes(font as ThemeFontId)
+    ? (font as ThemeFontId)
+    : DEFAULT_RESTAURANT_THEME.font_family
+  const headingFont =
+    THEME_FONTS.includes(headingFontRaw as ThemeFontId)
+      ? (headingFontRaw as ThemeFontId)
+      : baseFont
+
+  const layoutRaw = String(o.product_layout ?? '')
+  const product_layout: ThemeProductLayout = PRODUCT_LAYOUTS.includes(layoutRaw as ThemeProductLayout)
+    ? (layoutRaw as ThemeProductLayout)
+    : DEFAULT_RESTAURANT_THEME.product_layout
+
+  const cardRaw = String(o.card_style ?? '')
+  const card_style: ThemeCardStyle = CARD_STYLES.includes(cardRaw as ThemeCardStyle)
+    ? (cardRaw as ThemeCardStyle)
+    : DEFAULT_RESTAURANT_THEME.card_style
+
+  const densityRaw = String(o.density ?? '')
+  const density: ThemeDensity = DENSITIES.includes(densityRaw as ThemeDensity)
+    ? (densityRaw as ThemeDensity)
+    : DEFAULT_RESTAURANT_THEME.density
+
+  const cornerRaw = String(o.corner_radius ?? '')
+  const corner_radius: ThemeCornerRadius = RADII.includes(cornerRaw as ThemeCornerRadius)
+    ? (cornerRaw as ThemeCornerRadius)
+    : DEFAULT_RESTAURANT_THEME.corner_radius
+
   return {
     enabled: Boolean(o.enabled),
     background_color:
@@ -93,11 +185,14 @@ export function parseRestaurantTheme(raw: unknown): RestaurantTheme {
     accent_color:
       normalizeHex(String(o.accent_color ?? '')) ??
       DEFAULT_RESTAURANT_THEME.accent_color,
-    font_family: fonts.includes(font as ThemeFontId)
-      ? (font as ThemeFontId)
-      : DEFAULT_RESTAURANT_THEME.font_family,
+    font_family: baseFont,
+    heading_font_family: headingFont,
     header_display: o.header_display === 'logo' ? 'logo' : 'name',
     logo_url: typeof o.logo_url === 'string' && o.logo_url.length > 0 ? o.logo_url : null,
+    product_layout,
+    card_style,
+    density,
+    corner_radius,
   }
 }
 

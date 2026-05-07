@@ -2,6 +2,7 @@ import { AdminRoute } from '@/components/AdminRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Spinner } from '@/components/ui/Spinner'
 import { DashboardLayout } from '@/layouts/DashboardLayout'
+import { PublicMenuOutlet } from '@/routes/PublicMenuOutlet'
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
@@ -16,9 +17,6 @@ const RegisterPage = lazy(() =>
 )
 const PlansPublicPage = lazy(() =>
   import('@/pages/PlansPublicPage').then((m) => ({ default: m.PlansPublicPage })),
-)
-const PublicMenuPage = lazy(() =>
-  import('@/pages/public/PublicMenuPage').then((m) => ({ default: m.PublicMenuPage })),
 )
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
@@ -37,14 +35,25 @@ const CustomizationPage = lazy(() =>
 const UserPlansPage = lazy(() =>
   import('@/pages/dashboard/UserPlansPage').then((m) => ({ default: m.UserPlansPage })),
 )
+const SupportPage = lazy(() =>
+  import('@/pages/dashboard/SupportPage').then((m) => ({ default: m.SupportPage })),
+)
 const CategoriesPage = lazy(() =>
   import('@/pages/dashboard/CategoriesPage').then((m) => ({ default: m.CategoriesPage })),
+)
+const MenusPage = lazy(() =>
+  import('@/pages/dashboard/MenusPage').then((m) => ({ default: m.MenusPage })),
 )
 const ProductsPage = lazy(() =>
   import('@/pages/dashboard/ProductsPage').then((m) => ({ default: m.ProductsPage })),
 )
 const AdminPlansPage = lazy(() =>
   import('@/pages/dashboard/AdminPlansPage').then((m) => ({ default: m.AdminPlansPage })),
+)
+const AdminNotificationsPage = lazy(() =>
+  import('@/pages/dashboard/AdminNotificationsPage').then((m) => ({
+    default: m.AdminNotificationsPage,
+  })),
 )
 
 function RouteFallback() {
@@ -63,7 +72,7 @@ export function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/planos" element={<PlansPublicPage />} />
-        <Route path="/m/:slug" element={<PublicMenuPage />} />
+        <Route path="/m/:slug" element={<PublicMenuOutlet />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/app" element={<DashboardLayout />}>
@@ -71,11 +80,14 @@ export function AppRoutes() {
             <Route path="settings" element={<RestaurantSettingsPage />} />
             <Route path="personalizacao" element={<CustomizationPage />} />
             <Route path="plans" element={<UserPlansPage />} />
+            <Route path="support" element={<SupportPage />} />
+            <Route path="menus" element={<MenusPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="products" element={<ProductsPage />} />
             <Route path="admin" element={<AdminRoute />}>
               <Route index element={<Navigate to="plans" replace />} />
               <Route path="plans" element={<AdminPlansPage />} />
+              <Route path="notifications" element={<AdminNotificationsPage />} />
             </Route>
           </Route>
         </Route>

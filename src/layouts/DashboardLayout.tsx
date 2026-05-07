@@ -14,7 +14,10 @@ import {
   PanelLeftClose,
   Settings,
   Shield,
+  Bell,
+  LifeBuoy,
   Tags,
+  LayoutList,
   UtensilsCrossed,
   X,
 } from 'lucide-react'
@@ -63,13 +66,17 @@ export function DashboardLayout() {
           <Settings className="h-4 w-4 shrink-0" aria-hidden />
           Restaurante
         </NavLink>
+        <NavLink to="/app/menus" className={navClass} onClick={() => setOpen(false)}>
+          <LayoutList className="h-4 w-4 shrink-0" aria-hidden />
+          Cardápio
+        </NavLink>
         <NavLink to="/app/categories" className={navClass} onClick={() => setOpen(false)}>
           <Tags className="h-4 w-4 shrink-0" aria-hidden />
-          Categorias
+          Categoria
         </NavLink>
         <NavLink to="/app/products" className={navClass} onClick={() => setOpen(false)}>
           <Package className="h-4 w-4 shrink-0" aria-hidden />
-          Produtos
+          Produto
         </NavLink>
         <NavLink to="/app/personalizacao" className={navClass} onClick={() => setOpen(false)}>
           <Palette className="h-4 w-4 shrink-0" aria-hidden />
@@ -79,11 +86,21 @@ export function DashboardLayout() {
           <CreditCard className="h-4 w-4 shrink-0" aria-hidden />
           Planos
         </NavLink>
+        <NavLink to="/app/support" className={navClass} onClick={() => setOpen(false)}>
+          <LifeBuoy className="h-4 w-4 shrink-0" aria-hidden />
+          Suporte
+        </NavLink>
         {isPlatformAdmin ? (
-          <NavLink to="/app/admin/plans" className={navClass} onClick={() => setOpen(false)}>
-            <Shield className="h-4 w-4 shrink-0" aria-hidden />
-            Planos (admin)
-          </NavLink>
+          <>
+            <NavLink to="/app/admin/plans" className={navClass} onClick={() => setOpen(false)}>
+              <Shield className="h-4 w-4 shrink-0" aria-hidden />
+              Planos (admin)
+            </NavLink>
+            <NavLink to="/app/admin/notifications" className={navClass} onClick={() => setOpen(false)}>
+              <Bell className="h-4 w-4 shrink-0" aria-hidden />
+              Notificações
+            </NavLink>
+          </>
         ) : null}
       </nav>
       <div className="border-t border-slate-200 p-3 dark:border-slate-800">

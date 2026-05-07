@@ -9,26 +9,48 @@ import {
   fetchCategories,
   updateCategory,
 } from '@/services/categories'
+import { fetchMenus } from '@/services/menus'
 import { fetchMyRestaurant } from '@/services/restaurants'
+import { getSelectedMenuId, setSelectedMenuId } from '@/utils/menuSelection'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Tags, Trash2 } from 'lucide-react'
 import type { FormEvent } from 'react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+
+function getLimitMessage(message: string): string {
+  if (message.includes('plan_limit_exceeded:max_categories_per_menu')) {
+    return 'Você atingiu o limite de categorias por cardápio no seu plano.'
+  }
+  return message
+}
 
 export function CategoriesPage() {
   const qc = useQueryClient()
   const restaurantQuery = useQuery({ queryKey: ['my-restaurant'], queryFn: fetchMyRestaurant })
   const restaurantId = restaurantQuery.data?.id
+  const menusQuery = useQuery({
+    queryKey: ['menus', restaurantId],
+    queryFn: () => fetchMenus(restaurantId!),
+    enabled: Boolean(restaurantId),
+  })
+  const [selectedMenuId, setSelectedMenu] = useState<string | null>(getSelectedMenuId())
+
+  const effectiveMenuId = useMemo(() => {
+    const menus = menusQuery.data ?? []
+    if (!menus.length) return null
+    const exists = selectedMenuId && menus.some((m) => m.id === selectedMenuId)
+    return exists ? selectedMenuId : menus.find((m) => m.is_active)?.id ?? menus[0].id
+  }, [menusQuery.data, selectedMenuId])
 
   const listQuery = useQuery({
-    queryKey: ['categories', restaurantId],
-    queryFn: () => fetchCategories(restaurantId!),
-    enabled: Boolean(restaurantId),
+    queryKey: ['categories', restaurantId, effectiveMenuId],
+    queryFn: () => fetchCategories(restaurantId!, effectiveMenuId ?? undefined),
+    enabled: Boolean(restaurantId && effectiveMenuId),
   })
 
   const createMut = useMutation({
-    mutationFn: (name: string) => createCategory(restaurantId!, name),
+    mutationFn: (name: string) => createCategory(restaurantId!, effectiveMenuId!, name),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categories', restaurantId] }),
   })
 
@@ -46,7 +68,7 @@ export function CategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
 
-  if (restaurantQuery.isLoading) {
+  if (restaurantQuery.isLoading || menusQuery.isLoading) {
     return (
       <div className="flex justify-center py-20">
         <Spinner />
@@ -105,6 +127,26 @@ export function CategoriesPage() {
     <div className="mx-auto max-w-2xl">
       <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Categorias</h1>
       <p className="mt-1 text-slate-600 dark:text-slate-400">Organize itens do cardápio em seções.</p>
+      <div className="mt-4">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="menu-select">
+          Cardápio
+        </label>
+        <select
+          id="menu-select"
+          value={effectiveMenuId ?? ''}
+          onChange={(e) => {
+            setSelectedMenu(e.target.value)
+            setSelectedMenuId(e.target.value)
+          }}
+          className="mt-1.5 w-full max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
+        >
+          {(menusQuery.data ?? []).map((menu) => (
+            <option key={menu.id} value={menu.id}>
+              {menu.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <Card className="mt-6">
         <form onSubmit={handleAdd} className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -117,10 +159,22 @@ export function CategoriesPage() {
               placeholder="Ex.: Pratos principais"
             />
           </div>
-          <Button type="submit" loading={createMut.isPending} disabled={!newName.trim()}>
+          <Button
+            type="submit"
+            loading={createMut.isPending}
+            disabled={!newName.trim() || !effectiveMenuId}
+          >
             Adicionar
           </Button>
         </form>
+        {createMut.isError ? (
+          <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">
+            {getLimitMessage((createMut.error as Error).message)}{' '}
+            <Link to="/app/plans" className="underline">
+              Ver planos disponíveis
+            </Link>
+          </p>
+        ) : null}
       </Card>
 
       <div className="mt-8">

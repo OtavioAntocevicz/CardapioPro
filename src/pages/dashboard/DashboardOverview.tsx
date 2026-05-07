@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
+import { getPlanLimits } from '@/config/planLimits'
 import { fetchCategories } from '@/services/categories'
 import { createRestaurant, fetchMyRestaurant } from '@/services/restaurants'
 import { fetchProducts } from '@/services/products'
@@ -111,6 +112,7 @@ export function DashboardOverview() {
     typeof window !== 'undefined' && restaurant
       ? `${window.location.origin}/m/${restaurant.slug}`
       : ''
+  const limits = getPlanLimits(restaurant?.plan)
 
   if (restaurantQuery.isLoading) {
     return (
@@ -155,7 +157,7 @@ export function DashboardOverview() {
               <li>
                 Cole o arquivo{' '}
                 <code className="text-brand-700 dark:text-brand-300">
-                  supabase/migrations/20260412000000_init.sql
+                  supabase/migrations/20260507150000_full_schema_single_file.sql
                 </code>{' '}
                 do projeto e rode (Run).
               </li>
@@ -245,6 +247,7 @@ export function DashboardOverview() {
               <p className="text-2xl font-semibold text-slate-900 dark:text-white">
                 {statsQuery.isLoading ? '—' : statsQuery.data?.categories ?? 0}
               </p>
+              <p className="text-xs text-slate-500 dark:text-slate-500">Total no restaurante</p>
             </div>
           </div>
         </Card>
@@ -258,6 +261,7 @@ export function DashboardOverview() {
               <p className="text-2xl font-semibold text-slate-900 dark:text-white">
                 {statsQuery.isLoading ? '—' : statsQuery.data?.products ?? 0}
               </p>
+              <p className="text-xs text-slate-500 dark:text-slate-500">Total no restaurante</p>
             </div>
           </div>
         </Card>
@@ -333,13 +337,18 @@ export function DashboardOverview() {
             type="button"
             variant="secondary"
             className="gap-2"
-            disabled={!publicUrl}
+            disabled={!publicUrl || !limits.allowQrCode}
             onClick={() => void handleDownloadQr()}
           >
             <QrCode className="h-4 w-4" aria-hidden />
             Baixar QR Code (PNG)
           </Button>
         </div>
+        {!limits.allowQrCode ? (
+          <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+            QR Code disponível apenas nos planos Pro e Enterprise.
+          </p>
+        ) : null}
         {menuExportQuery.isError ? (
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">
             Não foi possível carregar os dados do cardápio para o PDF. Atualize a página.
@@ -348,6 +357,9 @@ export function DashboardOverview() {
       </Card>
 
       <div className="mt-8 flex flex-wrap gap-3">
+        <Link to="/app/menus">
+          <Button variant="ghost">Gerenciar cardápios</Button>
+        </Link>
         <Link to="/app/categories">
           <Button variant="secondary">Gerenciar categorias</Button>
         </Link>

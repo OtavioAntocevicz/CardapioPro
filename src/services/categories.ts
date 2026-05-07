@@ -3,14 +3,19 @@ import { getSupabase, getSupabasePublic } from './supabase'
 
 export async function fetchCategories(
   restaurantId: string,
+  menuId?: string,
   opts?: { asPublicVisitor?: boolean },
 ): Promise<Category[]> {
   const supabase = opts?.asPublicVisitor ? getSupabasePublic() : getSupabase()
-  const { data, error } = await supabase
+  let query = supabase
     .from('categories')
     .select('*')
     .eq('restaurant_id', restaurantId)
     .order('created_at', { ascending: true })
+
+  if (menuId) query = query.eq('menu_id', menuId)
+
+  const { data, error } = await query
 
   if (error) throw error
   return (data ?? []) as Category[]
@@ -18,13 +23,14 @@ export async function fetchCategories(
 
 export async function createCategory(
   restaurantId: string,
+  menuId: string,
   name: string,
 ): Promise<Category> {
-  const { data, error } = await getSupabase()
-    .from('categories')
-    .insert({ restaurant_id: restaurantId, name: name.trim() })
-    .select()
-    .single()
+  const { data, error } = await getSupabase().rpc('create_category', {
+    p_restaurant_id: restaurantId,
+    p_menu_id: menuId,
+    p_name: name.trim(),
+  })
 
   if (error) throw error
   return data as Category

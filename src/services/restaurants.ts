@@ -1,10 +1,15 @@
-import type { Plan, Restaurant } from '@/types/database'
+import type {
+  AdminAuditLog,
+  AdminRestaurantUsage,
+  Plan,
+  Restaurant,
+  SubscriptionStatus,
+} from '@/types/database'
 import type { RestaurantTheme } from '@/types/theme'
 import { getSupabase, getSupabasePublic } from './supabase'
 
 const BUCKET = 'product-images'
 
-/** Restaurante da conta (no máximo um por usuário). Filtra por dono; não depende só do RLS. */
 export async function fetchMyRestaurant(): Promise<Restaurant | null> {
   const { data: userData, error: userError } = await getSupabase().auth.getUser()
   if (userError) throw userError
@@ -15,6 +20,8 @@ export async function fetchMyRestaurant(): Promise<Restaurant | null> {
     .from('restaurants')
     .select('*')
     .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle()
 
   if (error) throw error
@@ -42,12 +49,25 @@ export async function createRestaurant(input: {
   const userId = userData.user?.id
   if (!userId) throw new Error('Sessão inválida')
 
+  const { data: ownRestaurants, error: ownError } = await getSupabase()
+    .from('restaurants')
+    .select('id, plan')
+    .eq('user_id', userId)
+
+  if (ownError) throw ownError
+  const currentPlan = (ownRestaurants?.[0]?.plan as Plan | undefined) ?? 'free'
+  const maxRestaurants = currentPlan === 'enterprise' ? 3 : 1
+  if ((ownRestaurants?.length ?? 0) >= maxRestaurants) {
+    throw new Error(`plan_limit_exceeded:max_restaurants (${maxRestaurants})`)
+  }
+
   const { data, error } = await getSupabase()
     .from('restaurants')
     .insert({
       user_id: userId,
       name: input.name.trim(),
       slug: input.slug,
+      plan: currentPlan,
     })
     .select()
     .single()
@@ -109,21 +129,49 @@ export async function uploadRestaurantLogo(restaurantId: string, file: File): Pr
   return data.publicUrl
 }
 
-/** Lista todos os restaurantes (política RLS para platform_admins). */
-export async function fetchAllRestaurantsAdmin(): Promise<Restaurant[]> {
-  const { data, error } = await getSupabase()
-    .from('restaurants')
-    .select('*')
-    .order('created_at', { ascending: false })
+export async function fetchAllRestaurantsAdmin(): Promise<AdminRestaurantUsage[]> {
+  const { data, error } = await getSupabase().rpc('admin_restaurants_usage')
 
   if (error) throw error
-  return (data ?? []) as Restaurant[]
+  return (data ?? []) as AdminRestaurantUsage[]
 }
 
 export async function adminSetRestaurantPlan(restaurantId: string, plan: Plan): Promise<void> {
-  const { error } = await getSupabase().rpc('admin_set_restaurant_plan', {
+  const { error } = await getSupabase().rpc('admin_set_restaurant_plan_status', {
     p_restaurant_id: restaurantId,
     p_plan: plan,
+    p_status: 'manual',
+    p_period_end: null,
+    p_note: null,
   })
   if (error) throw error
+}
+
+export async function adminSetRestaurantPlanStatus(input: {
+  restaurantId: string
+  plan: Plan
+  status: SubscriptionStatus
+  periodEnd?: string | null
+  note?: string | null
+}): Promise<void> {
+  const { error } = await getSupabase().rpc('admin_set_restaurant_plan_status', {
+    p_restaurant_id: input.restaurantId,
+    p_plan: input.plan,
+    p_status: input.status,
+    p_period_end: input.periodEnd ?? null,
+    p_note: input.note ?? null,
+  })
+  if (error) throw error
+}
+
+export async function fetchAdminAuditLogs(restaurantId: string): Promise<AdminAuditLog[]> {
+  const { data, error: listError } = await getSupabase()
+    .from('admin_audit_logs')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (listError) throw listError
+  return (data ?? []) as AdminAuditLog[]
 }

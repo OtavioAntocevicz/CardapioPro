@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { fetchCategories } from '@/services/categories'
+import { fetchMenus } from '@/services/menus'
 import { fetchMyRestaurant } from '@/services/restaurants'
 import {
   createProduct,
@@ -15,27 +16,48 @@ import {
 } from '@/services/products'
 import type { Product } from '@/types/database'
 import { formatPrice } from '@/utils/format'
+import { getSelectedMenuId, setSelectedMenuId } from '@/utils/menuSelection'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImagePlus, Package, Pencil, Trash2 } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+function getLimitMessage(message: string): string {
+  if (message.includes('plan_limit_exceeded:max_products_per_category')) {
+    return 'Você atingiu o limite de produtos por categoria no seu plano.'
+  }
+  return message
+}
+
 export function ProductsPage() {
   const qc = useQueryClient()
   const restaurantQuery = useQuery({ queryKey: ['my-restaurant'], queryFn: fetchMyRestaurant })
   const restaurantId = restaurantQuery.data?.id
+  const menusQuery = useQuery({
+    queryKey: ['menus', restaurantId],
+    queryFn: () => fetchMenus(restaurantId!),
+    enabled: Boolean(restaurantId),
+  })
+  const [selectedMenuId, setSelectedMenu] = useState<string | null>(getSelectedMenuId())
+
+  const effectiveMenuId = useMemo(() => {
+    const menus = menusQuery.data ?? []
+    if (!menus.length) return null
+    const exists = selectedMenuId && menus.some((m) => m.id === selectedMenuId)
+    return exists ? selectedMenuId : menus.find((m) => m.is_active)?.id ?? menus[0].id
+  }, [menusQuery.data, selectedMenuId])
 
   const categoriesQuery = useQuery({
-    queryKey: ['categories', restaurantId],
-    queryFn: () => fetchCategories(restaurantId!),
-    enabled: Boolean(restaurantId),
+    queryKey: ['categories', restaurantId, effectiveMenuId],
+    queryFn: () => fetchCategories(restaurantId!, effectiveMenuId ?? undefined),
+    enabled: Boolean(restaurantId && effectiveMenuId),
   })
 
   const productsQuery = useQuery({
-    queryKey: ['products', restaurantId],
-    queryFn: () => fetchProducts(restaurantId!),
-    enabled: Boolean(restaurantId),
+    queryKey: ['products', restaurantId, effectiveMenuId],
+    queryFn: () => fetchProducts(restaurantId!, effectiveMenuId ?? undefined),
+    enabled: Boolean(restaurantId && effectiveMenuId),
   })
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -59,7 +81,7 @@ export function ProductsPage() {
 
   const [modal, setModal] = useState<'create' | { edit: Product } | null>(null)
 
-  if (restaurantQuery.isLoading) {
+  if (restaurantQuery.isLoading || menusQuery.isLoading) {
     return (
       <div className="flex justify-center py-20">
         <Spinner />
@@ -107,6 +129,27 @@ export function ProductsPage() {
         <Button type="button" onClick={() => setModal('create')}>
           Novo produto
         </Button>
+      </div>
+
+      <div className="mt-6">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="menu-select">
+          Cardápio
+        </label>
+        <select
+          id="menu-select"
+          className="mt-1.5 w-full max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
+          value={effectiveMenuId ?? ''}
+          onChange={(e) => {
+            setSelectedMenu(e.target.value)
+            setSelectedMenuId(e.target.value)
+          }}
+        >
+          {(menusQuery.data ?? []).map((menu) => (
+            <option key={menu.id} value={menu.id}>
+              {menu.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="mt-6">
@@ -223,6 +266,7 @@ export function ProductsPage() {
       {modal ? (
         <ProductModal
           restaurantId={myRestaurant.id}
+          menuId={effectiveMenuId ?? ''}
           categories={categoriesQuery.data ?? []}
           mode={modal}
           onClose={() => setModal(null)}
@@ -238,12 +282,14 @@ export function ProductsPage() {
 
 function ProductModal({
   restaurantId,
+  menuId,
   categories,
   mode,
   onClose,
   onSaved,
 }: {
   restaurantId: string
+  menuId: string
   categories: { id: string; name: string }[]
   mode: 'create' | { edit: Product }
   onClose: () => void
@@ -285,6 +331,7 @@ function ProductModal({
       } else {
         await createProduct({
           restaurant_id: restaurantId,
+          menu_id: menuId,
           category_id: categoryId || null,
           name: name.trim(),
           description: description.trim() || null,
@@ -295,7 +342,12 @@ function ProductModal({
       }
       onSaved()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar')
+      const message = err instanceof Error ? err.message : 'Erro ao salvar'
+      if (message.includes('plan_limit_exceeded:max_products_per_category')) {
+        setError(`${getLimitMessage(message)} Acesse "Ver planos disponíveis" para fazer upgrade.`)
+      } else {
+        setError(message)
+      }
     } finally {
       setLoading(false)
     }
@@ -364,7 +416,14 @@ function ProductModal({
             />
           </div>
           {error ? (
-            <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
+            <p className="text-sm text-red-600 dark:text-red-300">
+              {error}{' '}
+              {error.includes('Limite') ? (
+                <Link to="/app/plans" className="underline">
+                  Ver planos disponíveis
+                </Link>
+              ) : null}
+            </p>
           ) : null}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={onClose}>

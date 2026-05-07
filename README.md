@@ -26,7 +26,7 @@ SaaS de cardápio digital para restaurantes: painel admin (categorias, produtos,
 
 3. No Supabase, execute o SQL (SQL Editor → colar e rodar **o arquivo inteiro**):
 
-   - `supabase/migrations/20260412000000_init.sql` — schema completo (tabelas, RLS, storage, admin, tema `jsonb`, um restaurante por conta, leitura pública como `anon`)
+   - `supabase/migrations/20260507150000_full_schema_single_file.sql` — schema único (menus, planos, auditoria, tema `jsonb`, RLS etc.; compatível com projeto novo ou base já existente)
 
 4. Em Authentication, habilite o provedor **Email** e ajuste URLs de redirect se necessário.
 
@@ -61,7 +61,7 @@ O arquivo `vercel.json` redireciona rotas do React Router para `index.html`.
 ### Checklist antes do primeiro deploy
 
 - [ ] Variáveis `VITE_SUPABASE_*` definidas no provedor (Vercel, etc.)
-- [ ] Script SQL `20260412000000_init.sql` aplicado no mesmo projeto Supabase
+- [ ] Script SQL `20260507150000_full_schema_single_file.sql` aplicado no mesmo projeto Supabase
 - [ ] Bucket de storage `product-images` existe e políticas batem com as migrações (se usar fotos)
 
 ## CI (GitHub Actions)

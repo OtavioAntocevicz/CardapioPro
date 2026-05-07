@@ -2,6 +2,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { fetchCategories } from '@/services/categories'
+import { fetchMenus } from '@/services/menus'
 import { fetchRestaurantBySlug } from '@/services/restaurants'
 import { fetchProducts } from '@/services/products'
 import type { Category, Product } from '@/types/database'
@@ -12,7 +13,11 @@ import {
   pickCardSurface,
   pickContrastTextColor,
   resolvedPublicTheme,
+  themeCardInsetShadow,
+  themeCornerClasses,
   themeFontStack,
+  themeGapBlocks,
+  themeGapList,
 } from '@/utils/menuTheme'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, LayoutGrid, List, UtensilsCrossed } from 'lucide-react'
@@ -47,7 +52,8 @@ export function PublicMenuPage() {
   const [searchParams] = useSearchParams()
   const isPreview = searchParams.get('preview') === '1'
   const [activeCategory, setActiveCategory] = useState<string>('all')
-  const [viewMode, setViewMode] = useState<MenuViewMode>('blocks')
+  /** Visitante sobrescreve blocos/lista; remontar a página (/mSlug) volta ao padrão do tema. */
+  const [visitorViewPreference, setVisitorViewPreference] = useState<MenuViewMode | null>(null)
 
   const restaurantQuery = useQuery({
     queryKey: ['public-restaurant', slug],
@@ -56,17 +62,23 @@ export function PublicMenuPage() {
   })
 
   const restaurantId = restaurantQuery.data?.id
+  const menusQuery = useQuery({
+    queryKey: ['public-menus', restaurantId],
+    queryFn: () => fetchMenus(restaurantId!, { asPublicVisitor: true }),
+    enabled: Boolean(restaurantId),
+  })
+  const activeMenuId = (menusQuery.data ?? []).find((m) => m.is_active)?.id
 
   const categoriesQuery = useQuery({
-    queryKey: ['public-categories', restaurantId],
-    queryFn: () => fetchCategories(restaurantId!, { asPublicVisitor: true }),
-    enabled: Boolean(restaurantId),
+    queryKey: ['public-categories', restaurantId, activeMenuId],
+    queryFn: () => fetchCategories(restaurantId!, activeMenuId, { asPublicVisitor: true }),
+    enabled: Boolean(restaurantId && activeMenuId),
   })
 
   const productsQuery = useQuery({
-    queryKey: ['public-products', restaurantId],
-    queryFn: () => fetchProducts(restaurantId!, { asPublicVisitor: true }),
-    enabled: Boolean(restaurantId),
+    queryKey: ['public-products', restaurantId, activeMenuId],
+    queryFn: () => fetchProducts(restaurantId!, activeMenuId, { asPublicVisitor: true }),
+    enabled: Boolean(restaurantId && activeMenuId),
   })
 
   const visibleProducts = useMemo(() => {
@@ -89,6 +101,16 @@ export function PublicMenuPage() {
     if (activeCategory === 'none') return byCategory.get(null) ?? []
     return byCategory.get(activeCategory) ?? []
   }, [activeCategory, byCategory, visibleProducts])
+
+  const themeDefaultView = useMemo((): MenuViewMode => {
+    const r = restaurantQuery.data
+    if (!r) return 'blocks'
+    const mt = parseRestaurantTheme(r.theme)
+    if (!mt.enabled) return 'blocks'
+    return mt.product_layout === 'cards' ? 'blocks' : 'list'
+  }, [restaurantQuery.data])
+
+  const viewMode = visitorViewPreference ?? themeDefaultView
 
   if (!slug) {
     return (
@@ -128,6 +150,14 @@ export function PublicMenuPage() {
   const rt = useCustom ? resolvedPublicTheme(menuTheme) : null
   const tone = useCustom && rt ? buildCustomTone(rt, menuTheme.background_color) : null
   const fontStack = useCustom && menuTheme ? themeFontStack(menuTheme.font_family) : undefined
+  const headingStack =
+    useCustom && menuTheme ? themeFontStack(menuTheme.heading_font_family) : undefined
+  const cornerRound = themeCornerClasses(menuTheme.corner_radius)
+  const layoutLockedToList = useCustom && menuTheme.product_layout === 'compact'
+  const effectiveDensity =
+    menuTheme.product_layout === 'compact' ? 'compact' : menuTheme.density
+  const showAsBlocks = viewMode === 'blocks' && !layoutLockedToList
+
   const showLogo = Boolean(
     useCustom && menuTheme.header_display === 'logo' && menuTheme.logo_url,
   )
@@ -193,7 +223,11 @@ export function PublicMenuPage() {
                   ? 'text-[11px] font-semibold uppercase tracking-[0.2em]'
                   : 'text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400'
               }
-              style={useCustom && rt ? { color: menuTheme.accent_color } : undefined}
+              style={
+                useCustom && rt
+                  ? { color: menuTheme.accent_color, fontFamily: headingStack }
+                  : undefined
+              }
             >
               Cardápio digital
             </p>
@@ -212,7 +246,11 @@ export function PublicMenuPage() {
                     ? 'mt-0.5 text-2xl font-bold tracking-tight'
                     : 'mt-0.5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white'
                 }
-                style={useCustom && rt ? { color: rt.effective_text_color } : undefined}
+                style={
+                  useCustom && rt
+                    ? { color: rt.effective_text_color, fontFamily: headingStack }
+                    : undefined
+                }
               >
                 {restaurant.name}
               </h1>
@@ -258,24 +296,33 @@ export function PublicMenuPage() {
           ))}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        {!layoutLockedToList ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p
+              className={
+                useCustom
+                  ? 'text-xs font-medium uppercase tracking-wide'
+                  : 'text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-500'
+              }
+              style={useCustom && rt ? { color: rt.effective_text_color, opacity: 0.65 } : undefined}
+            >
+              Visualização
+            </p>
+            <ViewModeSwitch
+              viewMode={viewMode}
+              onChange={setVisitorViewPreference}
+              custom={tone}
+              useCustom={useCustom}
+            />
+          </div>
+        ) : useCustom && rt ? (
           <p
-            className={
-              useCustom
-                ? 'text-xs font-medium uppercase tracking-wide'
-                : 'text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-500'
-            }
-            style={useCustom && rt ? { color: rt.effective_text_color, opacity: 0.65 } : undefined}
+            className="mt-4 text-[11px] font-medium uppercase tracking-wide"
+            style={{ color: rt.effective_text_color, opacity: 0.55 }}
           >
-            Visualização
+            Modo definido pelo estabelecimento: lista compacta
           </p>
-          <ViewModeSwitch
-            viewMode={viewMode}
-            onChange={setViewMode}
-            custom={tone}
-            useCustom={useCustom}
-          />
-        </div>
+        ) : null}
       </div>
 
       <main className="mx-auto max-w-lg px-4 pt-6">
@@ -314,17 +361,21 @@ export function PublicMenuPage() {
               description="Este cardápio ainda não tem itens disponíveis nesta seleção."
             />
           )
-        ) : viewMode === 'blocks' ? (
-          <ul className="flex flex-col gap-5">
+        ) : showAsBlocks ? (
+          <ul className={`flex flex-col ${themeGapBlocks(effectiveDensity)}`}>
             {filteredProducts.map((p) => (
               <li key={p.id}>
                 {useCustom && rt && tone ? (
                   <article
-                    className="overflow-hidden rounded-2xl border shadow-md"
+                    className={`overflow-hidden border ${cornerRound.card}`}
                     style={{
                       borderColor: tone.border,
                       backgroundColor: tone.cardBg,
-                      boxShadow: `0 8px 30px ${tone.text}12`,
+                      boxShadow: themeCardInsetShadow(
+                        menuTheme.card_style,
+                        rt.effective_text_color,
+                        'blocks',
+                      ),
                     }}
                   >
                     <div
@@ -349,11 +400,15 @@ export function PublicMenuPage() {
                         </div>
                       )}
                     </div>
-                    <div className="space-y-1.5 px-4 pb-4 pt-3">
+                    <div
+                      className={
+                        effectiveDensity === 'compact' ? 'space-y-1 px-3 pb-3 pt-2' : 'space-y-1.5 px-4 pb-4 pt-3'
+                      }
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
                         <h2
-                          className="text-lg font-semibold leading-snug"
-                          style={{ color: rt.effective_text_color }}
+                          className={`font-semibold leading-snug ${effectiveDensity === 'compact' ? 'text-base' : 'text-lg'}`}
+                          style={{ color: rt.effective_text_color, fontFamily: headingStack }}
                         >
                           {p.name}
                         </h2>
@@ -415,20 +470,24 @@ export function PublicMenuPage() {
             ))}
           </ul>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className={`flex flex-col ${themeGapList(effectiveDensity)}`}>
             {filteredProducts.map((p) => (
               <li key={p.id}>
                 {useCustom && rt && tone ? (
                   <article
-                    className="flex gap-3 overflow-hidden rounded-2xl border p-3 shadow-sm"
+                    className={`flex overflow-hidden border shadow-sm ${cornerRound.cardSmall} ${effectiveDensity === 'compact' ? 'gap-2 p-2' : 'gap-3 p-3'}`}
                     style={{
                       borderColor: tone.border,
                       backgroundColor: tone.cardBg,
-                      boxShadow: `0 4px 20px ${tone.text}0d`,
+                      boxShadow: themeCardInsetShadow(
+                        menuTheme.card_style,
+                        rt.effective_text_color,
+                        'list',
+                      ),
                     }}
                   >
                     <div
-                      className="relative h-[5.25rem] w-[5.25rem] shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-28"
+                      className={`relative shrink-0 overflow-hidden ${cornerRound.thumbSmall} ${effectiveDensity === 'compact' ? 'h-[4.25rem] w-[4.25rem] sm:h-20 sm:w-20' : 'h-[5.25rem] w-[5.25rem] sm:h-28 sm:w-28'}`}
                       style={{ backgroundColor: `${tone.text}10` }}
                     >
                       {p.image_url ? (
@@ -449,16 +508,16 @@ export function PublicMenuPage() {
                         </div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1 space-y-1">
+                    <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
                       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                         <h2
-                          className="text-base font-semibold leading-snug"
-                          style={{ color: rt.effective_text_color }}
+                          className={`font-semibold leading-snug ${effectiveDensity === 'compact' ? 'text-sm' : 'text-base'}`}
+                          style={{ color: rt.effective_text_color, fontFamily: headingStack }}
                         >
                           {p.name}
                         </h2>
                         <p
-                          className="shrink-0 text-base font-bold tabular-nums"
+                          className={`shrink-0 font-bold tabular-nums ${effectiveDensity === 'compact' ? 'text-sm' : 'text-base'}`}
                           style={{ color: menuTheme.accent_color }}
                         >
                           {formatPrice(Number(p.price))}
