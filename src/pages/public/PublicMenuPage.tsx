@@ -1,3 +1,6 @@
+import { ProductHighlightBadgeView } from '@/components/theme/ProductHighlightBadge'
+import { PublicSocialFloat } from '@/components/theme/PublicSocialFloat'
+import { ThemedMenuHeader } from '@/components/theme/ThemedMenuHeader'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
@@ -10,18 +13,21 @@ import { formatPrice } from '@/utils/format'
 import {
   parseRestaurantTheme,
   pickCardBorder,
-  pickCardSurface,
+  pickCardSurfaceWithOpacity,
   pickContrastTextColor,
   resolvedPublicTheme,
+  themeCardBorderCss,
   themeCardInsetShadow,
   themeCornerClasses,
+  themeEntryAnimationClass,
   themeFontStack,
   themeGapBlocks,
   themeGapList,
+  themeGlassBlur,
 } from '@/utils/menuTheme'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, LayoutGrid, List, UtensilsCrossed } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 type MenuViewMode = 'blocks' | 'list'
@@ -37,13 +43,14 @@ type CustomTone = {
 function buildCustomTone(
   rt: ReturnType<typeof resolvedPublicTheme>,
   backgroundHex: string,
+  cardOpacity: number,
 ): CustomTone {
   return {
     text: rt.effective_text_color,
     accent: rt.accent_color,
     accentFg: pickContrastTextColor(rt.accent_color),
     border: pickCardBorder(backgroundHex),
-    cardBg: pickCardSurface(backgroundHex),
+    cardBg: pickCardSurfaceWithOpacity(backgroundHex, cardOpacity),
   }
 }
 
@@ -148,7 +155,7 @@ export function PublicMenuPage() {
   const menuTheme = parseRestaurantTheme(restaurant.theme)
   const useCustom = menuTheme.enabled
   const rt = useCustom ? resolvedPublicTheme(menuTheme) : null
-  const tone = useCustom && rt ? buildCustomTone(rt, menuTheme.background_color) : null
+  const tone = useCustom && rt ? buildCustomTone(rt, menuTheme.background_color, menuTheme.card_opacity) : null
   const fontStack = useCustom && menuTheme ? themeFontStack(menuTheme.font_family) : undefined
   const headingStack =
     useCustom && menuTheme ? themeFontStack(menuTheme.heading_font_family) : undefined
@@ -158,9 +165,20 @@ export function PublicMenuPage() {
     menuTheme.product_layout === 'compact' ? 'compact' : menuTheme.density
   const showAsBlocks = viewMode === 'blocks' && !layoutLockedToList
 
-  const showLogo = Boolean(
-    useCustom && menuTheme.header_display === 'logo' && menuTheme.logo_url,
-  )
+  const cardBorderCss =
+    useCustom && rt && tone ? themeCardBorderCss(menuTheme.card_border_style) : null
+  const cardGlass = useCustom ? themeGlassBlur(menuTheme.card_opacity) : undefined
+
+  function themedCardInlineStyle(): CSSProperties {
+    if (!tone || !cardBorderCss) return {}
+    return {
+      borderColor: tone.border,
+      borderStyle: cardBorderCss.borderStyle as CSSProperties['borderStyle'],
+      borderWidth: cardBorderCss.borderWidth,
+      backgroundColor: tone.cardBg,
+      backdropFilter: cardGlass,
+    }
+  }
 
   const shellStyle =
     useCustom && rt && fontStack
@@ -200,63 +218,25 @@ export function PublicMenuPage() {
       <header
         className={
           useCustom
-            ? 'sticky top-0 z-20 border-b px-4 py-4 backdrop-blur-md'
+            ? 'sticky top-0 z-20'
             : 'sticky top-0 z-20 border-b border-slate-200/90 bg-white/90 px-4 py-4 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/90'
         }
-        style={
-          useCustom && rt
-            ? {
-                borderColor: pickCardBorder(menuTheme.background_color),
-                backgroundColor: `${menuTheme.background_color}f0`,
-              }
-            : undefined
-        }
       >
-        <div className="relative mx-auto max-w-lg">
-          {!useCustom ? (
+        {useCustom && rt ? (
+          <ThemedMenuHeader theme={menuTheme} restaurantName={restaurant.name} />
+        ) : (
+          <div className="relative mx-auto max-w-lg px-4 py-4">
             <ThemeToggle className="absolute right-0 top-1/2 z-10 -translate-y-1/2" />
-          ) : null}
-          <div className={!useCustom ? 'px-12 text-center' : 'px-4 text-center sm:px-12'}>
-            <p
-              className={
-                useCustom
-                  ? 'text-[11px] font-semibold uppercase tracking-[0.2em]'
-                  : 'text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400'
-              }
-              style={
-                useCustom && rt
-                  ? { color: menuTheme.accent_color, fontFamily: headingStack }
-                  : undefined
-              }
-            >
-              Cardápio digital
-            </p>
-            {showLogo && menuTheme.logo_url ? (
-              <div className="mt-3 flex justify-center">
-                <img
-                  src={menuTheme.logo_url}
-                  alt={restaurant.name}
-                  className="h-16 max-w-[min(100%,240px)] object-contain"
-                />
-              </div>
-            ) : (
-              <h1
-                className={
-                  useCustom
-                    ? 'mt-0.5 text-2xl font-bold tracking-tight'
-                    : 'mt-0.5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white'
-                }
-                style={
-                  useCustom && rt
-                    ? { color: rt.effective_text_color, fontFamily: headingStack }
-                    : undefined
-                }
-              >
+            <div className="px-12 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">
+                Cardápio digital
+              </p>
+              <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {restaurant.name}
               </h1>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       <div className="mx-auto max-w-lg px-4 pt-5">
@@ -363,14 +343,20 @@ export function PublicMenuPage() {
           )
         ) : showAsBlocks ? (
           <ul className={`flex flex-col ${themeGapBlocks(effectiveDensity)}`}>
-            {filteredProducts.map((p) => (
-              <li key={p.id}>
+            {filteredProducts.map((p, index) => (
+              <li
+                key={p.id}
+                className={
+                  useCustom && rt
+                    ? themeEntryAnimationClass(menuTheme.entry_animation, index)
+                    : undefined
+                }
+              >
                 {useCustom && rt && tone ? (
                   <article
                     className={`overflow-hidden border ${cornerRound.card}`}
                     style={{
-                      borderColor: tone.border,
-                      backgroundColor: tone.cardBg,
+                      ...themedCardInlineStyle(),
                       boxShadow: themeCardInsetShadow(
                         menuTheme.card_style,
                         rt.effective_text_color,
@@ -382,6 +368,15 @@ export function PublicMenuPage() {
                       className="relative aspect-[5/4] w-full overflow-hidden sm:aspect-[16/10]"
                       style={{ backgroundColor: `${tone.text}12` }}
                     >
+                      {menuTheme.show_product_badges && p.highlight_badge ? (
+                        <ProductHighlightBadgeView
+                          badge={p.highlight_badge}
+                          accentColor={menuTheme.accent_color}
+                          accentFg={tone.accentFg}
+                          style={menuTheme.badge_style}
+                          className="absolute left-3 top-3 z-10"
+                        />
+                      ) : null}
                       {p.image_url ? (
                         <img
                           src={p.image_url}
@@ -471,14 +466,20 @@ export function PublicMenuPage() {
           </ul>
         ) : (
           <ul className={`flex flex-col ${themeGapList(effectiveDensity)}`}>
-            {filteredProducts.map((p) => (
-              <li key={p.id}>
+            {filteredProducts.map((p, index) => (
+              <li
+                key={p.id}
+                className={
+                  useCustom && rt
+                    ? themeEntryAnimationClass(menuTheme.entry_animation, index)
+                    : undefined
+                }
+              >
                 {useCustom && rt && tone ? (
                   <article
                     className={`flex overflow-hidden border shadow-sm ${cornerRound.cardSmall} ${effectiveDensity === 'compact' ? 'gap-2 p-2' : 'gap-3 p-3'}`}
                     style={{
-                      borderColor: tone.border,
-                      backgroundColor: tone.cardBg,
+                      ...themedCardInlineStyle(),
                       boxShadow: themeCardInsetShadow(
                         menuTheme.card_style,
                         rt.effective_text_color,
@@ -509,6 +510,15 @@ export function PublicMenuPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
+                      {menuTheme.show_product_badges && p.highlight_badge ? (
+                        <ProductHighlightBadgeView
+                          badge={p.highlight_badge}
+                          accentColor={menuTheme.accent_color}
+                          accentFg={tone.accentFg}
+                          style={menuTheme.badge_style}
+                          className="mb-0.5"
+                        />
+                      ) : null}
                       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                         <h2
                           className={`font-semibold leading-snug ${effectiveDensity === 'compact' ? 'text-sm' : 'text-base'}`}
@@ -575,6 +585,13 @@ export function PublicMenuPage() {
           </ul>
         )}
       </main>
+
+      {useCustom && menuTheme.show_social_float ? (
+        <PublicSocialFloat
+          instagramUrl={menuTheme.social_instagram_url}
+          facebookUrl={menuTheme.social_facebook_url}
+        />
+      ) : null}
 
       <footer
         className={useCustom ? 'mx-auto mt-12 max-w-lg px-4 text-center text-xs' : 'mx-auto mt-12 max-w-lg px-4 text-center text-xs text-slate-500 dark:text-slate-600'}

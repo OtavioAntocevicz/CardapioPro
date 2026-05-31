@@ -841,3 +841,89 @@ create policy "support_notifications_admin_update"
       where pa.user_id = auth.uid()
     )
   );
+
+-- ============================================================================
+-- PARTE 3: Selo de destaque em produtos
+-- ============================================================================
+
+alter table public.products add column if not exists highlight_badge text
+  check (highlight_badge is null or highlight_badge in ('new', 'bestseller', 'special'));
+
+create or replace function public.create_product(
+  p_restaurant_id uuid,
+  p_menu_id uuid,
+  p_category_id uuid,
+  p_name text,
+  p_description text,
+  p_price numeric,
+  p_image_url text,
+  p_is_available boolean default true,
+  p_highlight_badge text default null
+)
+returns public.products
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_owner uuid;
+  v_plan text;
+  v_limits jsonb;
+  v_count int;
+  v_category_restaurant_id uuid;
+  v_category_menu_id uuid;
+  v_row public.products;
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated';
+  end if;
+
+  if p_highlight_badge is not null
+    and p_highlight_badge not in ('new', 'bestseller', 'special') then
+    raise exception 'invalid highlight_badge';
+  end if;
+
+  select r.user_id, r.plan into v_owner, v_plan
+  from public.restaurants r
+  where r.id = p_restaurant_id;
+
+  if v_owner is null then
+    raise exception 'restaurant not found';
+  end if;
+  if v_owner <> auth.uid() then
+    raise exception 'forbidden';
+  end if;
+
+  if p_category_id is not null then
+    select c.restaurant_id, c.menu_id into v_category_restaurant_id, v_category_menu_id
+    from public.categories c
+    where c.id = p_category_id;
+
+    if v_category_restaurant_id is null
+      or v_category_restaurant_id <> p_restaurant_id
+      or v_category_menu_id <> p_menu_id then
+      raise exception 'invalid category';
+    end if;
+  end if;
+
+  v_limits := public.plan_limits(v_plan);
+  select count(*) into v_count from public.products p where p.category_id = p_category_id;
+  if v_count >= (v_limits->>'max_products_per_category')::int then
+    raise exception 'plan_limit_exceeded:max_products_per_category';
+  end if;
+
+  insert into public.products (
+    restaurant_id, menu_id, category_id, name, description, price, image_url, is_available, highlight_badge
+  )
+  values (
+    p_restaurant_id, p_menu_id, p_category_id, trim(p_name), p_description, p_price, p_image_url,
+    coalesce(p_is_available, true), p_highlight_badge
+  )
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+revoke all on function public.create_product(uuid, uuid, uuid, text, text, numeric, text, boolean, text) from public;
+grant execute on function public.create_product(uuid, uuid, uuid, text, text, numeric, text, boolean, text) to authenticated;

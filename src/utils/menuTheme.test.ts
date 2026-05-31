@@ -46,6 +46,23 @@ describe('parseRestaurantTheme', () => {
     expect(t.font_family).toBe('poppins')
     expect(t.heading_font_family).toBe('poppins')
   })
+
+  it('aceita novos campos de branding e estilo', () => {
+    const t = parseRestaurantTheme({
+      logo_align: 'left',
+      logo_size: 180,
+      logo_shape: 'circle',
+      card_opacity: 65,
+      card_border_style: 'dashed',
+      entry_animation: 'slide',
+      badge_style: 'ribbon',
+      show_social_float: true,
+    })
+    expect(t.logo_align).toBe('left')
+    expect(t.logo_size).toBe(180)
+    expect(t.card_opacity).toBe(65)
+    expect(t.entry_animation).toBe('slide')
+  })
 })
 
 describe('helpers de layout', () => {

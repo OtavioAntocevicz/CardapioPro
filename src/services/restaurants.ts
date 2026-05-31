@@ -129,6 +129,22 @@ export async function uploadRestaurantLogo(restaurantId: string, file: File): Pr
   return data.publicUrl
 }
 
+/** Banner de capa do cabeçalho público. */
+export async function uploadRestaurantBanner(restaurantId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const safeExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg'
+  const path = `${restaurantId}/branding/banner.${safeExt}`
+
+  const { error: upError } = await getSupabase().storage
+    .from(BUCKET)
+    .upload(path, file, { cacheControl: '3600', upsert: true })
+
+  if (upError) throw upError
+
+  const { data } = getSupabase().storage.from(BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
 export async function fetchAllRestaurantsAdmin(): Promise<AdminRestaurantUsage[]> {
   const { data, error } = await getSupabase().rpc('admin_restaurants_usage')
 

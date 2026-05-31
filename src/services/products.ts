@@ -51,6 +51,7 @@ export async function createProduct(row: ProductInsert): Promise<Product> {
     p_price: row.price,
     p_image_url: row.image_url,
     p_is_available: row.is_available,
+    p_highlight_badge: row.highlight_badge ?? null,
   })
 
   if (error) throw error

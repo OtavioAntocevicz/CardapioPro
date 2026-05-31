@@ -33,6 +33,8 @@ export interface Category {
   created_at: string
 }
 
+export type ProductHighlightBadge = 'new' | 'bestseller' | 'special'
+
 export interface Product {
   id: string
   restaurant_id: string
@@ -43,12 +45,16 @@ export interface Product {
   price: number
   image_url: string | null
   is_available: boolean
+  highlight_badge: ProductHighlightBadge | null
   created_at: string
 }
 
 export type ProductInsert = Omit<Product, 'id' | 'created_at'>
 export type ProductUpdate = Partial<
-  Pick<Product, 'name' | 'description' | 'price' | 'image_url' | 'is_available' | 'category_id'>
+  Pick<
+    Product,
+    'name' | 'description' | 'price' | 'image_url' | 'is_available' | 'category_id' | 'highlight_badge'
+  >
 >
 
 export interface AdminRestaurantUsage {

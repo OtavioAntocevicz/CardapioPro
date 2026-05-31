@@ -1,10 +1,15 @@
 import {
   DEFAULT_RESTAURANT_THEME,
   type RestaurantTheme,
+  type ThemeBadgeStyle,
+  type ThemeCardBorderStyle,
   type ThemeCardStyle,
   type ThemeCornerRadius,
   type ThemeDensity,
+  type ThemeEntryAnimation,
   type ThemeFontId,
+  type ThemeLogoAlign,
+  type ThemeLogoShape,
   type ThemeProductLayout,
 } from '@/types/theme'
 
@@ -52,10 +57,62 @@ export function pickContrastTextColor(backgroundHex: string): '#0f172a' | '#f8fa
   return relativeLuminance(backgroundHex) > 0.55 ? '#0f172a' : '#f8fafc'
 }
 
-/** Superfície de cards (produtos) com bom contraste sobre o fundo. */
-export function pickCardSurface(backgroundHex: string): string {
+/** Superfície de cards com opacidade configurável (glassmorphism). */
+export function pickCardSurfaceWithOpacity(backgroundHex: string, opacityPercent: number): string {
   const dark = relativeLuminance(backgroundHex) <= 0.55
-  return dark ? 'rgba(15, 23, 42, 0.55)' : 'rgba(255, 255, 255, 0.92)'
+  const base = dark ? [15, 23, 42] : [255, 255, 255]
+  const alpha = Math.min(100, Math.max(40, opacityPercent)) / 100
+  return `rgba(${base[0]}, ${base[1]}, ${base[2]}, ${alpha.toFixed(2)})`
+}
+
+export function pickCardSurface(backgroundHex: string): string {
+  return pickCardSurfaceWithOpacity(backgroundHex, 92)
+}
+
+export function themeLogoAlignClass(align: ThemeLogoAlign): string {
+  if (align === 'left') return 'justify-start text-left'
+  if (align === 'right') return 'justify-end text-right'
+  return 'justify-center text-center'
+}
+
+export function themeLogoShapeClass(shape: ThemeLogoShape): string {
+  if (shape === 'circle') return 'rounded-full'
+  if (shape === 'square') return 'rounded-none'
+  return 'rounded-xl'
+}
+
+export function themeCardBorderCss(
+  style: ThemeCardBorderStyle,
+): { borderStyle: string; borderWidth: string } {
+  if (style === 'dashed') return { borderStyle: 'dashed', borderWidth: '1px' }
+  if (style === 'double') return { borderStyle: 'double', borderWidth: '3px' }
+  return { borderStyle: 'solid', borderWidth: '1px' }
+}
+
+export function themeEntryAnimationClass(animation: ThemeEntryAnimation, index = 0): string {
+  if (animation === 'none') return ''
+  const delay = Math.min(index * 40, 200)
+  if (animation === 'slide') return `menu-anim-slide [animation-delay:${delay}ms]`
+  return `menu-anim-fade [animation-delay:${delay}ms]`
+}
+
+export function themeGlassBlur(cardOpacity: number): string | undefined {
+  return cardOpacity < 88 ? 'blur(12px) saturate(1.2)' : undefined
+}
+
+const LOGO_ALIGNS: ThemeLogoAlign[] = ['left', 'center', 'right']
+const LOGO_SHAPES: ThemeLogoShape[] = ['square', 'rounded', 'circle']
+const BORDER_STYLES: ThemeCardBorderStyle[] = ['solid', 'dashed', 'double']
+const ENTRY_ANIMS: ThemeEntryAnimation[] = ['none', 'fade', 'slide']
+const BADGE_STYLES: ThemeBadgeStyle[] = ['pill', 'ribbon', 'minimal']
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n))
+}
+
+function parseEnum<T extends string>(raw: unknown, allowed: readonly T[], fallback: T): T {
+  const s = String(raw ?? '')
+  return allowed.includes(s as T) ? (s as T) : fallback
 }
 
 export function pickCardBorder(backgroundHex: string): string {
@@ -189,10 +246,39 @@ export function parseRestaurantTheme(raw: unknown): RestaurantTheme {
     heading_font_family: headingFont,
     header_display: o.header_display === 'logo' ? 'logo' : 'name',
     logo_url: typeof o.logo_url === 'string' && o.logo_url.length > 0 ? o.logo_url : null,
+    logo_align: parseEnum(o.logo_align, LOGO_ALIGNS, DEFAULT_RESTAURANT_THEME.logo_align),
+    logo_size: clamp(Number(o.logo_size ?? DEFAULT_RESTAURANT_THEME.logo_size), 50, 200),
+    logo_shape: parseEnum(o.logo_shape, LOGO_SHAPES, DEFAULT_RESTAURANT_THEME.logo_shape),
+    header_banner_url:
+      typeof o.header_banner_url === 'string' && o.header_banner_url.length > 0
+        ? o.header_banner_url
+        : null,
     product_layout,
     card_style,
     density,
     corner_radius,
+    card_opacity: clamp(Number(o.card_opacity ?? DEFAULT_RESTAURANT_THEME.card_opacity), 40, 100),
+    card_border_style: parseEnum(
+      o.card_border_style,
+      BORDER_STYLES,
+      DEFAULT_RESTAURANT_THEME.card_border_style,
+    ),
+    entry_animation: parseEnum(
+      o.entry_animation,
+      ENTRY_ANIMS,
+      DEFAULT_RESTAURANT_THEME.entry_animation,
+    ),
+    badge_style: parseEnum(o.badge_style, BADGE_STYLES, DEFAULT_RESTAURANT_THEME.badge_style),
+    show_product_badges:
+      o.show_product_badges === undefined
+        ? DEFAULT_RESTAURANT_THEME.show_product_badges
+        : Boolean(o.show_product_badges),
+    social_instagram_url: String(o.social_instagram_url ?? '').trim(),
+    social_facebook_url: String(o.social_facebook_url ?? '').trim(),
+    show_social_float:
+      o.show_social_float === undefined
+        ? DEFAULT_RESTAURANT_THEME.show_social_float
+        : Boolean(o.show_social_float),
   }
 }
 

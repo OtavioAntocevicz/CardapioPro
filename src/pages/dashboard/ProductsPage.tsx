@@ -14,8 +14,9 @@ import {
   updateProduct,
   uploadProductImage,
 } from '@/services/products'
-import type { Product } from '@/types/database'
+import type { Product, ProductHighlightBadge } from '@/types/database'
 import { formatPrice } from '@/utils/format'
+import { HIGHLIGHT_BADGE_OPTIONS } from '@/utils/productBadges'
 import { getSelectedMenuId, setSelectedMenuId } from '@/utils/menuSelection'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImagePlus, Package, Pencil, Trash2 } from 'lucide-react'
@@ -302,6 +303,9 @@ function ProductModal({
     editing ? String(editing.price).replace('.', ',') : '',
   )
   const [categoryId, setCategoryId] = useState(editing?.category_id ?? '')
+  const [highlightBadge, setHighlightBadge] = useState<ProductHighlightBadge | ''>(
+    editing?.highlight_badge ?? '',
+  )
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -327,6 +331,7 @@ function ProductModal({
           price: priceNum,
           category_id: categoryId || null,
           image_url: imageUrl,
+          highlight_badge: highlightBadge || null,
         })
       } else {
         await createProduct({
@@ -338,6 +343,7 @@ function ProductModal({
           price: priceNum,
           image_url: imageUrl,
           is_available: true,
+          highlight_badge: highlightBadge || null,
         })
       }
       onSaved()
@@ -405,6 +411,26 @@ function ProductModal({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="product-badge" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Selo de destaque
+            </label>
+            <select
+              id="product-badge"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
+              value={highlightBadge}
+              onChange={(e) => setHighlightBadge(e.target.value as ProductHighlightBadge | '')}
+            >
+              {HIGHLIGHT_BADGE_OPTIONS.map((o) => (
+                <option key={o.value || 'none'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500">
+              Visível no cardápio público quando a personalização estiver ativa.
+            </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Imagem</span>
