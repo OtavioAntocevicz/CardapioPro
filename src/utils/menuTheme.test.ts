@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_RESTAURANT_THEME } from '@/types/theme'
-import { parseRestaurantTheme, themeCornerClasses, themeGapBlocks } from './menuTheme'
+import {
+  parseRestaurantTheme,
+  pickCardSurfaceWithOpacity,
+  themeCornerClasses,
+  themeGapBlocks,
+  themeGlassBlur,
+} from './menuTheme'
 
 describe('parseRestaurantTheme', () => {
   it('preenche todos os defaults quando vazio ou inválido', () => {
@@ -62,6 +68,20 @@ describe('parseRestaurantTheme', () => {
     expect(t.logo_size).toBe(180)
     expect(t.card_opacity).toBe(65)
     expect(t.entry_animation).toBe('slide')
+  })
+})
+
+describe('pickCardSurfaceWithOpacity', () => {
+  it('gera superfícies distintas em fundo escuro conforme o slider', () => {
+    const low = pickCardSurfaceWithOpacity('#0f172a', 40)
+    const high = pickCardSurfaceWithOpacity('#0f172a', 100)
+    expect(low).not.toBe(high)
+    expect(low).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/)
+  })
+
+  it('aplica blur proporcional abaixo de 96%', () => {
+    expect(themeGlassBlur(100)).toBeUndefined()
+    expect(themeGlassBlur(70)).toMatch(/blur\(\d+px\)/)
   })
 })
 

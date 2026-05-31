@@ -59,10 +59,24 @@ export function pickContrastTextColor(backgroundHex: string): '#0f172a' | '#f8fa
 
 /** Superfície de cards com opacidade configurável (glassmorphism). */
 export function pickCardSurfaceWithOpacity(backgroundHex: string, opacityPercent: number): string {
+  const rgb = parseRgb(backgroundHex)
   const dark = relativeLuminance(backgroundHex) <= 0.55
-  const base = dark ? [15, 23, 42] : [255, 255, 255]
-  const alpha = Math.min(100, Math.max(40, opacityPercent)) / 100
-  return `rgba(${base[0]}, ${base[1]}, ${base[2]}, ${alpha.toFixed(2)})`
+  const opacity = Math.min(100, Math.max(40, opacityPercent)) / 100
+
+  if (!rgb) {
+    return dark
+      ? `rgba(255, 255, 255, ${(0.06 + opacity * 0.14).toFixed(2)})`
+      : `rgba(255, 255, 255, ${opacity.toFixed(2)})`
+  }
+
+  // Eleva a cor do fundo em direção ao branco e usa alpha conforme o slider (40–100%).
+  const lift = dark ? 0.08 + opacity * 0.18 : 0.3 + opacity * 0.55
+  const r = Math.round(rgb.r + (255 - rgb.r) * lift)
+  const g = Math.round(rgb.g + (255 - rgb.g) * lift)
+  const b = Math.round(rgb.b + (255 - rgb.b) * lift)
+  const alpha = dark ? 0.32 + opacity * 0.58 : 0.48 + opacity * 0.5
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`
 }
 
 export function pickCardSurface(backgroundHex: string): string {
@@ -97,7 +111,19 @@ export function themeEntryAnimationClass(animation: ThemeEntryAnimation, index =
 }
 
 export function themeGlassBlur(cardOpacity: number): string | undefined {
-  return cardOpacity < 88 ? 'blur(12px) saturate(1.2)' : undefined
+  if (cardOpacity >= 96) return undefined
+  const px = Math.round(6 + (96 - cardOpacity) * 0.35)
+  return `blur(${px}px) saturate(1.2)`
+}
+
+/** Estilos de backdrop para glassmorphism (inclui prefixo WebKit). */
+export function themeCardBackdropFilter(cardOpacity: number): {
+  backdropFilter?: string
+  WebkitBackdropFilter?: string
+} {
+  const blur = themeGlassBlur(cardOpacity)
+  if (!blur) return {}
+  return { backdropFilter: blur, WebkitBackdropFilter: blur }
 }
 
 const LOGO_ALIGNS: ThemeLogoAlign[] = ['left', 'center', 'right']

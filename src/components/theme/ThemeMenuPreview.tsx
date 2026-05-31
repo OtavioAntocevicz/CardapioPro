@@ -5,12 +5,12 @@ import {
   parseRestaurantTheme,
   pickContrastTextColor,
   resolvedPublicTheme,
+  themeCardBackdropFilter,
   themeCardBorderCss,
   themeCardInsetShadow,
   themeCornerClasses,
   themeEntryAnimationClass,
   themeFontStack,
-  themeGlassBlur,
   pickCardSurfaceWithOpacity,
 } from '@/utils/menuTheme'
 import { LayoutGrid, List, UtensilsCrossed } from 'lucide-react'
@@ -47,7 +47,7 @@ export function ThemeMenuPreview({
   const showBlocks = parsed.product_layout === 'cards'
   const accentFg = pickContrastTextColor(accent)
   const borderCss = themeCardBorderCss(parsed.card_border_style)
-  const glass = themeGlassBlur(parsed.card_opacity)
+  const cardBackdrop = themeCardBackdropFilter(parsed.card_opacity)
 
   const frameClass = embedded ? 'w-full max-w-none' : frame === 'mobile' ? 'max-w-[360px]' : 'max-w-[720px]'
 
@@ -66,7 +66,7 @@ export function ThemeMenuPreview({
     borderStyle: borderCss.borderStyle,
     borderWidth: borderCss.borderWidth,
     backgroundColor: cardBg,
-    backdropFilter: glass,
+    ...cardBackdrop,
   } as const
 
   return (

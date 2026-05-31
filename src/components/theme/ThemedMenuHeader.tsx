@@ -18,7 +18,8 @@ export function ThemedMenuHeader({ theme, restaurantName, compact = false }: The
   const rt = resolvedPublicTheme(theme)
   const headingFont = themeFontStack(theme.heading_font_family)
   const showLogo = theme.header_display === 'logo' && Boolean(theme.logo_url)
-  const align = themeLogoAlignClass(theme.logo_align)
+  const logoAlign = themeLogoAlignClass(theme.logo_align)
+  const headerAlign = showLogo ? logoAlign : 'justify-center text-center'
   const shape = themeLogoShapeClass(theme.logo_shape)
   const logoW = Math.min(200, Math.max(50, theme.logo_size))
 
@@ -43,8 +44,8 @@ export function ThemedMenuHeader({ theme, restaurantName, compact = false }: The
           />
         </div>
       ) : null}
-      <div className={`flex px-4 py-3 ${align} ${compact ? 'py-2' : 'py-4'}`}>
-        <div className="max-w-full">
+      <div className={`flex px-4 py-3 ${headerAlign} ${compact ? 'py-2' : 'py-4'}`}>
+        <div className={showLogo ? 'max-w-full' : 'max-w-full text-center'}>
           <p
             className={`font-semibold uppercase tracking-[0.2em] ${compact ? 'text-[8px]' : 'text-[11px]'}`}
             style={{ color: theme.accent_color, fontFamily: headingFont }}
@@ -52,7 +53,7 @@ export function ThemedMenuHeader({ theme, restaurantName, compact = false }: The
             Cardápio digital
           </p>
           {showLogo && theme.logo_url ? (
-            <div className={`mt-2 flex ${align}`}>
+            <div className={`mt-2 flex ${logoAlign}`}>
               <img
                 src={theme.logo_url}
                 alt={restaurantName}
