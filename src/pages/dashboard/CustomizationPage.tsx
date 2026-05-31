@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
 import { getPlanLimits } from '@/config/planLimits'
+import { BANNER_PRESETS } from '@/data/bannerPresets'
 import {
   fetchMyRestaurant,
   updateMyRestaurantTheme,
@@ -29,6 +30,10 @@ import {
   parseRestaurantTheme,
   pickContrastTextColor,
 } from '@/utils/menuTheme'
+import {
+  sanitizeSocialUrlForSave,
+  validateSocialUrl,
+} from '@/utils/socialUrl'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ExternalLink,
@@ -209,6 +214,10 @@ function CustomizationForm({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    const instagramError = validateSocialUrl(theme.social_instagram_url, 'instagram')
+    const facebookError = validateSocialUrl(theme.social_facebook_url, 'facebook')
+    if (instagramError || facebookError) return
+
     const textColor =
       textManual && theme.text_color.trim()
         ? normalizeHex(theme.text_color.trim()) ?? ''
@@ -217,14 +226,19 @@ function CustomizationForm({
       ...theme,
       text_color: textColor,
       logo_url: theme.header_display === 'logo' ? theme.logo_url : null,
+      social_instagram_url: sanitizeSocialUrlForSave(theme.social_instagram_url),
+      social_facebook_url: sanitizeSocialUrlForSave(theme.social_facebook_url),
     })
   }
+
+  const instagramError = validateSocialUrl(theme.social_instagram_url, 'instagram')
+  const facebookError = validateSocialUrl(theme.social_facebook_url, 'facebook')
 
   const previewHref = `/m/${slug}?preview=1`
   const cornerIndex = (['sm', 'md', 'lg'] as ThemeCornerRadius[]).indexOf(theme.corner_radius)
 
   return (
-    <div className="-mx-4 -mt-4 flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden md:-mx-8 md:-mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_min(380px,34vw)]">
+    <div className="-mx-4 -mt-4 flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden md:-mx-8 md:-mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_320px]">
       {/* Coluna 2 — painel de configurações */}
       <form onSubmit={handleSubmit} className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="shrink-0 border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 md:px-6">
@@ -520,6 +534,41 @@ function CustomizationForm({
                   {bannerUploading ? (
                     <p className="mt-2 text-center text-sm text-slate-500">Enviando capa…</p>
                   ) : null}
+                  <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                    <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Ou escolha uma capa pronta
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {BANNER_PRESETS.map((preset) => {
+                        const selected = theme.header_banner_url === preset.url
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            className={`group overflow-hidden rounded-lg border-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+                              selected
+                                ? 'border-brand-600 ring-2 ring-brand-500/30'
+                                : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                            onClick={() =>
+                              setTheme((t) => ({ ...t, header_banner_url: preset.url }))
+                            }
+                            aria-pressed={selected}
+                            aria-label={`Capa: ${preset.label}`}
+                          >
+                            <img
+                              src={preset.url}
+                              alt=""
+                              className="aspect-[3/1] w-full object-cover"
+                            />
+                            <span className="block truncate px-2 py-1.5 text-[11px] font-medium text-slate-600 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-slate-200">
+                              {preset.label}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 <SegmentField
@@ -533,6 +582,7 @@ function CustomizationForm({
                     setTheme((t) => ({
                       ...t,
                       header_display: v as 'name' | 'logo',
+                      ...(v === 'name' ? { logo_align: 'center' as const } : {}),
                     }))
                   }
                 />
@@ -759,6 +809,7 @@ function CustomizationForm({
                     setTheme((t) => ({ ...t, social_instagram_url: e.target.value }))
                   }
                   placeholder="https://instagram.com/seurestaurante"
+                  error={instagramError ?? undefined}
                 />
                 <Input
                   label="Facebook (URL completa)"
@@ -767,6 +818,7 @@ function CustomizationForm({
                     setTheme((t) => ({ ...t, social_facebook_url: e.target.value }))
                   }
                   placeholder="https://facebook.com/seurestaurante"
+                  error={facebookError ?? undefined}
                 />
               </fieldset>
             </TabPanel>
@@ -784,7 +836,12 @@ function CustomizationForm({
             <p className="mb-2 text-sm text-emerald-700 dark:text-emerald-400">Alterações salvas.</p>
           ) : null}
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" loading={saveMut.isPending} className="shadow-md">
+            <Button
+              type="submit"
+              loading={saveMut.isPending}
+              disabled={Boolean(instagramError || facebookError)}
+              className="shadow-md"
+            >
               Salvar alterações
             </Button>
             <a
@@ -801,13 +858,13 @@ function CustomizationForm({
       </form>
 
       {/* Coluna 3 — prévia fixa (desktop) */}
-      <aside className="hidden min-h-0 border-l border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 lg:block">
-        <div className="sticky top-0 flex h-[calc(100dvh-3.5rem)] flex-col items-center justify-center gap-4 overflow-y-auto p-6">
+      <aside className="hidden w-[320px] shrink-0 border-l border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 lg:block">
+        <div className="sticky top-0 flex h-[calc(100dvh-3.5rem)] flex-col items-center justify-start gap-4 overflow-y-auto px-5 py-8">
           <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Prévia em tempo real
           </p>
           <PhoneMockupPreview theme={theme} restaurantName={restaurantName} />
-          <p className="max-w-[260px] text-center text-xs text-slate-500 dark:text-slate-500">
+          <p className="max-w-[280px] text-center text-xs text-slate-500 dark:text-slate-500">
             Reflete instantaneamente cores, fontes e layout selecionados.
           </p>
         </div>

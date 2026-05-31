@@ -23,10 +23,10 @@ import {
   themeFontStack,
   themeGapBlocks,
   themeGapList,
-  themeGlassBlur,
+  themeCardBackdropFilter,
 } from '@/utils/menuTheme'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, LayoutGrid, List, UtensilsCrossed } from 'lucide-react'
+import { ArrowLeft, LayoutGrid, List, Search, UtensilsCrossed, X } from 'lucide-react'
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 
@@ -59,6 +59,7 @@ export function PublicMenuPage() {
   const [searchParams] = useSearchParams()
   const isPreview = searchParams.get('preview') === '1'
   const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   /** Visitante sobrescreve blocos/lista; remontar a página (/mSlug) volta ao padrão do tema. */
   const [visitorViewPreference, setVisitorViewPreference] = useState<MenuViewMode | null>(null)
 
@@ -104,10 +105,19 @@ export function PublicMenuPage() {
   }, [visibleProducts])
 
   const filteredProducts = useMemo(() => {
-    if (activeCategory === 'all') return visibleProducts
-    if (activeCategory === 'none') return byCategory.get(null) ?? []
-    return byCategory.get(activeCategory) ?? []
-  }, [activeCategory, byCategory, visibleProducts])
+    let list: Product[]
+    if (activeCategory === 'all') list = visibleProducts
+    else if (activeCategory === 'none') list = byCategory.get(null) ?? []
+    else list = byCategory.get(activeCategory) ?? []
+
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return list
+    return list.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.description?.toLowerCase().includes(q) ?? false),
+    )
+  }, [activeCategory, byCategory, visibleProducts, searchQuery])
 
   const themeDefaultView = useMemo((): MenuViewMode => {
     const r = restaurantQuery.data
@@ -167,7 +177,7 @@ export function PublicMenuPage() {
 
   const cardBorderCss =
     useCustom && rt && tone ? themeCardBorderCss(menuTheme.card_border_style) : null
-  const cardGlass = useCustom ? themeGlassBlur(menuTheme.card_opacity) : undefined
+  const cardBackdrop = useCustom ? themeCardBackdropFilter(menuTheme.card_opacity) : {}
 
   function themedCardInlineStyle(): CSSProperties {
     if (!tone || !cardBorderCss) return {}
@@ -176,7 +186,7 @@ export function PublicMenuPage() {
       borderStyle: cardBorderCss.borderStyle as CSSProperties['borderStyle'],
       borderWidth: cardBorderCss.borderWidth,
       backgroundColor: tone.cardBg,
-      backdropFilter: cardGlass,
+      ...cardBackdrop,
     }
   }
 
@@ -188,6 +198,8 @@ export function PublicMenuPage() {
           fontFamily: fontStack,
         }
       : undefined
+
+  const hasSearch = searchQuery.trim().length > 0
 
   return (
     <div
@@ -240,6 +252,52 @@ export function PublicMenuPage() {
       </header>
 
       <div className="mx-auto max-w-lg px-4 pt-5">
+        <label className="sr-only" htmlFor="menu-search">
+          Buscar no cardápio
+        </label>
+        <div className="relative mb-4">
+          <Search
+            className={
+              useCustom
+                ? 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50'
+                : 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400'
+            }
+            style={useCustom && rt ? { color: rt.effective_text_color } : undefined}
+            aria-hidden
+          />
+          <input
+            id="menu-search"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar prato..."
+            className={
+              useCustom
+                ? 'w-full rounded-xl border py-2.5 pl-10 pr-10 text-sm outline-none focus:ring-2 focus:ring-offset-0'
+                : 'w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500'
+            }
+            style={
+              useCustom && rt && tone
+                ? {
+                    borderColor: tone.border,
+                    backgroundColor: tone.cardBg,
+                    color: rt.effective_text_color,
+                  }
+                : undefined
+            }
+          />
+          {searchQuery ? (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 opacity-60 hover:opacity-100"
+              onClick={() => setSearchQuery('')}
+              aria-label="Limpar busca"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+
         <p
           className={
             useCustom
@@ -324,21 +382,27 @@ export function PublicMenuPage() {
               </div>
               <div>
                 <p className="font-medium" style={{ color: rt.effective_text_color }}>
-                  Nada por aqui
+                  {hasSearch ? 'Nenhum resultado' : 'Nada por aqui'}
                 </p>
                 <p
                   className="mt-1 max-w-sm text-sm"
                   style={{ color: rt.effective_text_color, opacity: 0.75 }}
                 >
-                  Este cardápio ainda não tem itens disponíveis nesta seleção.
+                  {hasSearch
+                    ? `Não encontramos pratos para "${searchQuery.trim()}".`
+                    : 'Este cardápio ainda não tem itens disponíveis nesta seleção.'}
                 </p>
               </div>
             </div>
           ) : (
             <EmptyState
               icon={UtensilsCrossed}
-              title="Nada por aqui"
-              description="Este cardápio ainda não tem itens disponíveis nesta seleção."
+              title={hasSearch ? 'Nenhum resultado' : 'Nada por aqui'}
+              description={
+                hasSearch
+                  ? `Não encontramos pratos para "${searchQuery.trim()}".`
+                  : 'Este cardápio ainda não tem itens disponíveis nesta seleção.'
+              }
             />
           )
         ) : showAsBlocks ? (

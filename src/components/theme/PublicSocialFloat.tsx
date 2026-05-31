@@ -1,3 +1,5 @@
+import { normalizeHttpUrl } from '@/utils/socialUrl'
+
 type PublicSocialFloatProps = {
   instagramUrl?: string
   facebookUrl?: string
@@ -5,8 +7,12 @@ type PublicSocialFloatProps = {
 
 export function PublicSocialFloat({ instagramUrl, facebookUrl }: PublicSocialFloatProps) {
   const links = [
-    instagramUrl?.trim() ? { href: instagramUrl.trim(), label: 'Instagram', short: 'IG' } : null,
-    facebookUrl?.trim() ? { href: facebookUrl.trim(), label: 'Facebook', short: 'FB' } : null,
+    instagramUrl?.trim()
+      ? { href: normalizeHttpUrl(instagramUrl), label: 'Instagram', short: 'IG' }
+      : null,
+    facebookUrl?.trim()
+      ? { href: normalizeHttpUrl(facebookUrl), label: 'Facebook', short: 'FB' }
+      : null,
   ].filter(Boolean) as { href: string; label: string; short: string }[]
 
   if (!links.length) return null

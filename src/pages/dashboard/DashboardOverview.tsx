@@ -287,11 +287,6 @@ export function DashboardOverview() {
                 Abrir em nova aba
               </Button>
             </a>
-            <Link to={`/m/${restaurant.slug}?preview=1`}>
-              <Button variant="ghost" className="gap-2">
-                Pré-visualizar aqui
-              </Button>
-            </Link>
             <Link to="/app/settings">
               <Button variant="ghost" className="gap-2">
                 Editar restaurante
