@@ -23,7 +23,7 @@ export function PlansPublicPage() {
           <Link to="/login" className={buttonClass('ghost')}>
             Entrar
           </Link>
-          <Link to="/register" className={buttonClass('primary', 'hidden sm:inline-flex')}>
+          <Link to="/register" className={buttonClass('primary', 'max-sm:hidden')}>
             Criar conta
           </Link>
         </nav>

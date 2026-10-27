@@ -47,13 +47,13 @@ export function LandingPage() {
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2" aria-label="Principal">
           <ThemeToggle />
-          <Link to="/planos" className={buttonClass('ghost', 'hidden sm:inline-flex')}>
+          <Link to="/planos" className={buttonClass('ghost', 'max-sm:hidden')}>
             Planos
           </Link>
           <Link to="/login" className={buttonClass('ghost')}>
             Entrar
           </Link>
-          <Link to="/register" className={buttonClass('primary', 'hidden sm:inline-flex')}>
+          <Link to="/register" className={buttonClass('primary', 'max-sm:hidden')}>
             Criar conta
           </Link>
         </nav>
