@@ -1,14 +1,16 @@
 import { PlansComparisonTable } from '@/components/plans/PlansComparisonTable'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { Button } from '@/components/ui/Button'
+import { buttonClass } from '@/components/ui/buttonClass'
 import { PLAN_MARKETING, PLAN_ORDER } from '@/data/plans'
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+const HIGHLIGHTED_PLAN = 'pro'
+
 export function PlansPublicPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-6">
+      <header className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-5">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
@@ -16,15 +18,15 @@ export function PlansPublicPage() {
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Início
         </Link>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1 sm:gap-2" aria-label="Conta">
           <ThemeToggle />
-          <Link to="/login">
-            <Button variant="ghost">Entrar</Button>
+          <Link to="/login" className={buttonClass('ghost')}>
+            Entrar
           </Link>
-          <Link to="/register">
-            <Button>Criar conta</Button>
+          <Link to="/register" className={buttonClass('primary', 'hidden sm:inline-flex')}>
+            Criar conta
           </Link>
-        </div>
+        </nav>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-4">
@@ -37,15 +39,25 @@ export function PlansPublicPage() {
         <ul className="mt-8 grid gap-4 sm:grid-cols-3">
           {PLAN_ORDER.map((id) => {
             const m = PLAN_MARKETING[id]
+            const highlighted = id === HIGHLIGHTED_PLAN
             return (
               <li
                 key={id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/50"
+                className={`relative flex flex-col rounded-xl border bg-white p-5 shadow-sm dark:bg-slate-900/50 ${
+                  highlighted
+                    ? 'border-brand-400 ring-1 ring-brand-400 dark:border-brand-500/60 dark:ring-brand-500/60'
+                    : 'border-slate-200 dark:border-slate-800'
+                }`}
               >
+                {highlighted ? (
+                  <span className="absolute -top-2.5 left-5 rounded-full bg-brand-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                    Mais popular
+                  </span>
+                ) : null}
                 <p className="text-lg font-semibold text-slate-900 dark:text-white">{m.name}</p>
                 <p className="mt-1 text-2xl font-bold text-brand-600 dark:text-brand-400">{m.priceLabel}</p>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{m.tagline}</p>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">{m.priceNote}</p>
+                <p className="mt-2 flex-1 text-xs text-slate-500 dark:text-slate-500">{m.priceNote}</p>
               </li>
             )
           })}
@@ -63,14 +75,12 @@ export function PlansPublicPage() {
           </div>
         </section>
 
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <Link to="/register">
-            <Button className="min-w-[200px]">Começar no Free</Button>
+        <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link to="/register" className={buttonClass('primary', 'sm:min-w-[200px]')}>
+            Começar no Free
           </Link>
-          <Link to="/login">
-            <Button variant="secondary" className="min-w-[200px]">
-              Já tenho conta
-            </Button>
+          <Link to="/login" className={buttonClass('secondary', 'sm:min-w-[200px]')}>
+            Já tenho conta
           </Link>
         </div>
       </main>

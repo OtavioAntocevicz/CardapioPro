@@ -1,7 +1,10 @@
 import { Button } from '@/components/ui/Button'
+import { buttonClass } from '@/components/ui/buttonClass'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   createCategory,
@@ -92,10 +95,7 @@ export function CategoriesPage() {
           title="Crie seu restaurante primeiro"
           description="As categorias ficam vinculadas ao seu estabelecimento. Configure o restaurante na página inicial do painel e volte aqui em seguida."
           action={
-            <Link
-              to="/app"
-              className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-brand-600/20 transition hover:bg-brand-700 dark:shadow-brand-900/40"
-            >
+            <Link to="/app" className={buttonClass('primary')}>
               Ir para início
             </Link>
           }
@@ -124,28 +124,24 @@ export function CategoriesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Categorias</h1>
-      <p className="mt-1 text-slate-600 dark:text-slate-400">Organize itens do cardápio em seções.</p>
-      <div className="mt-4">
-        <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="menu-select">
-          Cardápio
-        </label>
-        <select
+    <div className="mx-auto max-w-3xl">
+      <PageHeader title="Categorias" description="Organize itens do cardápio em seções." />
+      <div className="mt-6 sm:max-w-xs">
+        <Select
           id="menu-select"
+          label="Cardápio"
           value={effectiveMenuId ?? ''}
           onChange={(e) => {
             setSelectedMenu(e.target.value)
             setSelectedMenuId(e.target.value)
           }}
-          className="mt-1.5 w-full max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
         >
           {(menusQuery.data ?? []).map((menu) => (
             <option key={menu.id} value={menu.id}>
               {menu.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <Card className="mt-6">
@@ -192,7 +188,7 @@ export function CategoriesPage() {
           <ul className="flex flex-col gap-2">
             {listQuery.data?.map((c) => (
               <li key={c.id}>
-                <Card className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <Card className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   {editingId === c.id ? (
                     <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
                       <Input
@@ -212,12 +208,14 @@ export function CategoriesPage() {
                     </div>
                   ) : (
                     <>
-                      <span className="font-medium text-slate-900 dark:text-slate-100">{c.name}</span>
-                      <div className="flex gap-2">
+                      <span className="min-w-0 truncate font-medium text-slate-900 dark:text-slate-100">
+                        {c.name}
+                      </span>
+                      <div className="flex shrink-0 gap-2">
                         <Button
                           type="button"
                           variant="secondary"
-                          className="gap-1.5"
+                          size="sm"
                           onClick={() => startEdit(c.id, c.name)}
                         >
                           <Pencil className="h-3.5 w-3.5" aria-hidden />
@@ -226,13 +224,13 @@ export function CategoriesPage() {
                         <Button
                           type="button"
                           variant="danger"
-                          className="gap-1.5"
+                          size="sm"
                           onClick={() => {
-                            if (confirm('Excluir esta categoria? Produtos podem ficar sem categoria.')) {
+                            if (confirm(`Excluir a categoria "${c.name}"? Os produtos dela ficarão sem categoria.`)) {
                               deleteMut.mutate(c.id)
                             }
                           }}
-                          loading={deleteMut.isPending}
+                          loading={deleteMut.isPending && deleteMut.variables === c.id}
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden />
                           Excluir

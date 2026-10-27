@@ -1,7 +1,10 @@
 import { Button } from '@/components/ui/Button'
+import { buttonClass } from '@/components/ui/buttonClass'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { fetchCategories } from '@/services/categories'
@@ -19,9 +22,9 @@ import { formatPrice } from '@/utils/format'
 import { HIGHLIGHT_BADGE_OPTIONS } from '@/utils/productBadges'
 import { getSelectedMenuId, setSelectedMenuId } from '@/utils/menuSelection'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImagePlus, Package, Pencil, Trash2 } from 'lucide-react'
+import { ImagePlus, Package, Pencil, Plus, Trash2, X } from 'lucide-react'
 import type { FormEvent } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 function getLimitMessage(message: string): string {
@@ -106,10 +109,7 @@ export function ProductsPage() {
           title="Crie seu restaurante primeiro"
           description="Para cadastrar produtos, comece pela página inicial do painel e registre o nome e o link público do seu estabelecimento."
           action={
-            <Link
-              to="/app"
-              className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-brand-600/20 transition hover:bg-brand-700 dark:shadow-brand-900/40"
-            >
+            <Link to="/app" className={buttonClass('primary')}>
               Ir para início
             </Link>
           }
@@ -121,24 +121,22 @@ export function ProductsPage() {
   const myRestaurant = restaurantQuery.data
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Produtos</h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">Imagens, preços e disponibilidade.</p>
-        </div>
-        <Button type="button" onClick={() => setModal('create')}>
-          Novo produto
-        </Button>
-      </div>
+    <div className="mx-auto max-w-5xl">
+      <PageHeader
+        title="Produtos"
+        description="Imagens, preços e disponibilidade."
+        actions={
+          <Button type="button" onClick={() => setModal('create')}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Novo produto
+          </Button>
+        }
+      />
 
-      <div className="mt-6">
-        <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="menu-select">
-          Cardápio
-        </label>
-        <select
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:max-w-2xl">
+        <Select
           id="menu-select"
-          className="mt-1.5 w-full max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
+          label="Cardápio"
           value={effectiveMenuId ?? ''}
           onChange={(e) => {
             setSelectedMenu(e.target.value)
@@ -150,19 +148,10 @@ export function ProductsPage() {
               {menu.name}
             </option>
           ))}
-        </select>
-      </div>
-
-      <div className="mt-6">
-        <label
-          className="text-sm font-medium text-slate-700 dark:text-slate-300"
-          htmlFor="cat-filter"
-        >
-          Filtrar por categoria
-        </label>
-        <select
+        </Select>
+        <Select
           id="cat-filter"
-          className="mt-1.5 w-full max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
+          label="Filtrar por categoria"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
         >
@@ -173,7 +162,7 @@ export function ProductsPage() {
               {c.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="mt-8">
@@ -193,7 +182,7 @@ export function ProductsPage() {
             }
           />
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((p) => (
               <li key={p.id}>
                 <Card className="flex h-full flex-col gap-3 p-4">
@@ -215,7 +204,9 @@ export function ProductsPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-slate-900 dark:text-slate-100">{p.name}</p>
+                      <p className="truncate font-medium text-slate-900 dark:text-slate-100" title={p.name}>
+                        {p.name}
+                      </p>
                       <p className="text-sm font-semibold text-brand-600 dark:text-brand-400">
                         {formatPrice(Number(p.price))}
                       </p>
@@ -240,7 +231,7 @@ export function ProductsPage() {
                     <Button
                       type="button"
                       variant="secondary"
-                      className="gap-1 text-xs"
+                      size="sm"
                       onClick={() => setModal({ edit: p })}
                     >
                       <Pencil className="h-3.5 w-3.5" aria-hidden />
@@ -249,9 +240,12 @@ export function ProductsPage() {
                     <Button
                       type="button"
                       variant="danger"
-                      className="gap-1 text-xs"
+                      size="sm"
+                      aria-label={`Excluir ${p.name}`}
+                      title="Excluir"
+                      loading={deleteMut.isPending && deleteMut.variables === p.id}
                       onClick={() => {
-                        if (confirm('Excluir este produto?')) deleteMut.mutate(p.id)
+                        if (confirm(`Excluir o produto "${p.name}"?`)) deleteMut.mutate(p.id)
                       }}
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -309,6 +303,22 @@ function ProductModal({
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const filePreview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+  const previewUrl = filePreview ?? editing?.image_url ?? null
+
+  useEffect(() => {
+    return () => {
+      if (filePreview) URL.revokeObjectURL(filePreview)
+    }
+  }, [filePreview])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [loading, onClose])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -350,7 +360,7 @@ function ProductModal({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao salvar'
       if (message.includes('plan_limit_exceeded:max_products_per_category')) {
-        setError(`${getLimitMessage(message)} Acesse "Ver planos disponíveis" para fazer upgrade.`)
+        setError(getLimitMessage(message))
       } else {
         setError(message)
       }
@@ -360,19 +370,35 @@ function ProductModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 backdrop-blur-sm dark:bg-black/70 sm:items-center">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 backdrop-blur-sm dark:bg-black/70 sm:items-center"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !loading) onClose()
+      }}
+    >
       <div
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
         role="dialog"
         aria-modal
         aria-labelledby="product-modal-title"
       >
-        <h2
-          id="product-modal-title"
-          className="text-lg font-semibold text-slate-900 dark:text-white"
-        >
-          {editing ? 'Editar produto' : 'Novo produto'}
-        </h2>
+        <div className="flex items-start justify-between gap-4">
+          <h2
+            id="product-modal-title"
+            className="text-lg font-semibold text-slate-900 dark:text-white"
+          >
+            {editing ? 'Editar produto' : 'Novo produto'}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="-m-1 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            aria-label="Fechar"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           <Input label="Nome" name="name" required value={name} onChange={(e) => setName(e.target.value)} />
           <Textarea
@@ -391,16 +417,10 @@ function ProductModal({
             onChange={(e) => setPrice(e.target.value)}
             placeholder="12,90"
           />
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="product-category"
-              className="text-sm font-medium text-slate-700 dark:text-slate-300"
-            >
-              Categoria
-            </label>
-            <select
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
               id="product-category"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
+              label="Categoria"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
@@ -410,15 +430,10 @@ function ProductModal({
                   {c.name}
                 </option>
               ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="product-badge" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Selo de destaque
-            </label>
-            <select
+            </Select>
+            <Select
               id="product-badge"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
+              label="Selo de destaque"
               value={highlightBadge}
               onChange={(e) => setHighlightBadge(e.target.value as ProductHighlightBadge | '')}
             >
@@ -427,24 +442,38 @@ function ProductModal({
                   {o.label}
                 </option>
               ))}
-            </select>
-            <p className="text-xs text-slate-500">
-              Visível no cardápio público quando a personalização estiver ativa.
-            </p>
+            </Select>
           </div>
+          <p className="-mt-2 text-xs text-slate-500">
+            O selo aparece no cardápio público quando a personalização estiver ativa.
+          </p>
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Imagem</span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:text-slate-800 dark:text-slate-400 dark:file:bg-slate-800 dark:file:text-slate-200"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
+            <label htmlFor="product-image" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Imagem
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-slate-400 dark:text-slate-600">
+                    <ImagePlus className="h-6 w-6" aria-hidden />
+                  </div>
+                )}
+              </div>
+              <input
+                id="product-image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="min-w-0 flex-1 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:text-slate-800 dark:text-slate-400 dark:file:bg-slate-800 dark:file:text-slate-200"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
           </div>
           {error ? (
             <p className="text-sm text-red-600 dark:text-red-300">
               {error}{' '}
-              {error.includes('Limite') ? (
+              {/limite/i.test(error) ? (
                 <Link to="/app/plans" className="underline">
                   Ver planos disponíveis
                 </Link>

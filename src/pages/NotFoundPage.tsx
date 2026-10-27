@@ -1,5 +1,5 @@
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { Button } from '@/components/ui/Button'
+import { buttonClass } from '@/components/ui/buttonClass'
 import { Home, SearchX } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -20,14 +20,12 @@ export function NotFoundPage() {
           O endereço pode estar incorreto ou a página foi removida. Confira o link ou volte ao início.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/">
-            <Button className="gap-2">
-              <Home className="h-4 w-4" aria-hidden />
-              Ir para o início
-            </Button>
+          <Link to="/" className={buttonClass('primary')}>
+            <Home className="h-4 w-4" aria-hidden />
+            Ir para o início
           </Link>
-          <Link to="/login">
-            <Button variant="secondary">Entrar</Button>
+          <Link to="/login" className={buttonClass('secondary')}>
+            Entrar
           </Link>
         </div>
       </main>

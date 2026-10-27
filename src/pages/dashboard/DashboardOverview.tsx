@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/Button'
+import { buttonClass } from '@/components/ui/buttonClass'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import { getPlanLimits } from '@/config/planLimits'
 import { fetchCategories } from '@/services/categories'
@@ -10,7 +12,17 @@ import { downloadMenuPdf } from '@/utils/menuPdf'
 import { downloadMenuQrPng } from '@/utils/menuQr'
 import { isValidSlug, slugify } from '@/utils/slug'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, FileDown, Link2, Package, QrCode, Tags } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  Copy,
+  ExternalLink,
+  FileDown,
+  Link2,
+  Package,
+  QrCode,
+  Tags,
+} from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -62,6 +74,7 @@ export function DashboardOverview() {
   const [includePhotosInPdf, setIncludePhotosInPdf] = useState(false)
   const [exportBusy, setExportBusy] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   function handleNameChange(value: string) {
     setName(value)
@@ -228,72 +241,106 @@ export function DashboardOverview() {
     )
   }
 
+  const stats = [
+    {
+      label: 'Categorias',
+      value: statsQuery.data?.categories,
+      to: '/app/categories',
+      icon: Tags,
+      tone: 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300',
+    },
+    {
+      label: 'Produtos',
+      value: statsQuery.data?.products,
+      to: '/app/products',
+      icon: Package,
+      tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+    },
+  ]
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(publicUrl)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Visão geral</h1>
-      <p className="mt-1 text-slate-600 dark:text-slate-400">
-        Olá! Gerencie seu cardápio em{' '}
-        <span className="font-medium text-slate-800 dark:text-slate-200">{restaurant.name}</span>.
-      </p>
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        title="Visão geral"
+        description={
+          <>
+            Olá! Gerencie seu cardápio em{' '}
+            <span className="font-medium text-slate-800 dark:text-slate-200">{restaurant.name}</span>.
+          </>
+        }
+        actions={
+          <span className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold capitalize text-brand-700 ring-1 ring-brand-200 dark:bg-brand-500/10 dark:text-brand-200 dark:ring-brand-500/30">
+            Plano {restaurant.plan}
+          </span>
+        }
+      />
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
-              <Tags className="h-5 w-5" aria-hidden />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Categorias</p>
-              <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                {statsQuery.isLoading ? '—' : statsQuery.data?.categories ?? 0}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-500">Total no restaurante</p>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-              <Package className="h-5 w-5" aria-hidden />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Produtos</p>
-              <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                {statsQuery.isLoading ? '—' : statsQuery.data?.products ?? 0}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-500">Total no restaurante</p>
-            </div>
-          </div>
-        </Card>
+        {stats.map((s) => (
+          <Link
+            key={s.label}
+            to={s.to}
+            className="group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
+            <Card className="flex items-center gap-4 transition group-hover:border-brand-300 group-hover:shadow-md dark:group-hover:border-brand-500/40">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${s.tone}`}>
+                <s.icon className="h-5 w-5" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-slate-500 dark:text-slate-400">{s.label}</p>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {statsQuery.isLoading ? '—' : s.value ?? 0}
+                </p>
+              </div>
+              <ArrowRight
+                className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600"
+                aria-hidden
+              />
+            </Card>
+          </Link>
+        ))}
       </div>
 
       <Card className="mt-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-200">
-              <Link2 className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />
-              Link público do cardápio
-            </p>
-            <p className="mt-1 break-all text-sm text-slate-600 dark:text-slate-400">{publicUrl}</p>
-            <p className="mt-2 text-xs text-slate-500">
-              Plano atual:{' '}
-              <span className="text-slate-700 dark:text-slate-400">{restaurant.plan}</span>
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 sm:justify-end">
-            <a href={publicUrl} target="_blank" rel="noreferrer">
-              <Button variant="secondary" className="gap-2">
-                <ExternalLink className="h-4 w-4" aria-hidden />
-                Abrir em nova aba
-              </Button>
+        <p className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-200">
+          <Link2 className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />
+          Link público do cardápio
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <code className="min-w-0 flex-1 truncate rounded-lg bg-slate-100 px-3 py-2.5 text-sm text-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
+            {publicUrl}
+          </code>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => void handleCopyLink()}>
+              {copied ? (
+                <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+              ) : (
+                <Copy className="h-4 w-4" aria-hidden />
+              )}
+              {copied ? 'Copiado' : 'Copiar'}
+            </Button>
+            <a href={publicUrl} target="_blank" rel="noreferrer" className={buttonClass('secondary')}>
+              <ExternalLink className="h-4 w-4" aria-hidden />
+              Abrir
             </a>
-            <Link to="/app/settings">
-              <Button variant="ghost" className="gap-2">
-                Editar restaurante
-              </Button>
-            </Link>
           </div>
         </div>
+        <Link
+          to="/app/settings"
+          className="mt-3 inline-block text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+        >
+          Editar nome e link do restaurante
+        </Link>
       </Card>
 
       <Card className="mt-6">
@@ -352,14 +399,14 @@ export function DashboardOverview() {
       </Card>
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link to="/app/menus">
-          <Button variant="ghost">Gerenciar cardápios</Button>
+        <Link to="/app/menus" className={buttonClass('ghost')}>
+          Gerenciar cardápios
         </Link>
-        <Link to="/app/categories">
-          <Button variant="secondary">Gerenciar categorias</Button>
+        <Link to="/app/categories" className={buttonClass('secondary')}>
+          Gerenciar categorias
         </Link>
-        <Link to="/app/products">
-          <Button>Gerenciar produtos</Button>
+        <Link to="/app/products" className={buttonClass('primary')}>
+          Gerenciar produtos
         </Link>
       </div>
     </div>
